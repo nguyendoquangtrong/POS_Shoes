@@ -1,0 +1,49 @@
+<!-- Views/Account/AccessDenied.cshtml -->
+@{
+    ViewData["Title"] = "Truy cập bị từ chối";
+    Layout = "~/Views/Shared/_LoginLayout.cshtml";
+}
+
+<div class="container-fluid vh-100">
+    <div class="row h-100 justify-content-center align-items-center">
+        <div class="col-12 col-sm-8 col-md-6 col-lg-4">
+            <div class="card shadow-lg border-0">
+                <!-- Header -->
+                <div class="card-header bg-danger text-white text-center py-4">
+                    <h2 class="mb-2 fw-bold">
+                        <i class="fas fa-exclamation-triangle fa-2x mb-3"></i>
+                    </h2>
+                    <p class="mb-0 h5">Truy cập bị từ chối</p>
+                </div>
+
+                <!-- Body -->
+                <div class="card-body p-4 text-center">
+                    <div class="alert alert-warning" role="alert">
+                        <i class="fas fa-info-circle me-2"></i>
+                        Bạn không có quyền truy cập vào trang này.
+                    </div>
+
+                    <p class="text-muted mb-4">
+                        Vui lòng liên hệ quản trị viên hoặc đăng nhập với tài khoản có quyền phù hợp.
+                    </p>
+
+                    <div class="d-grid gap-2">
+                        <a asp-action="Login" class="btn btn-primary btn-lg">
+                            <i class="fas fa-sign-in-alt me-2"></i>Đăng nhập lại
+                        </a>
+                        <a href="javascript:history.back()" class="btn btn-outline-secondary">
+                            <i class="fas fa-arrow-left me-2"></i>Quay lại
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Footer -->
+                <div class="card-footer bg-light text-center py-3">
+                    <small class="text-muted">
+                        <i class="fas fa-shield-alt me-1"></i>Hệ thống bảo mật POS Shoes
+                    </small>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

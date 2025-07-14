@@ -1,0 +1,265 @@
+<!-- Areas/Master/Views/PaySlipApproval/Index.cshtml -->
+@model IEnumerable<PaySlip>
+@{
+    ViewData["Title"] = "Duyệt phiếu lương";
+    Layout = "~/Areas/Master/Views/Shared/_Layout.cshtml";
+}
+
+<div class="row">
+    <div class="col-md-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2><i class="fas fa-money-bill-wave"></i> Duyệt phiếu lương</h2>
+            <div class="d-flex gap-2">
+                <select id="statusFilter" class="form-select" onchange="filterByStatus()">
+                    <option value="">Tất cả trạng thái</option>
+                    <option value="Generated" selected="@(ViewBag.SelectedStatus == "Generated")">Chờ duyệt</option>
+                    <option value="Approved" selected="@(ViewBag.SelectedStatus == "Approved")">Đã duyệt</option>
+                    <option value="Rejected" selected="@(ViewBag.SelectedStatus == "Rejected")">Bị từ chối</option>
+                    <option value="Paid" selected="@(ViewBag.SelectedStatus == "Paid")">Đã thanh toán</option>
+                </select>
+
+                @if (ViewBag.PendingCount > 0)
+                {
+                    <span class="badge bg-warning fs-6">@ViewBag.PendingCount chờ duyệt</span>
+                }
+            </div>
+        </div>
+
+        <!-- Statistics Cards -->
+        <div class="row mb-4">
+            <div class="col-md-3">
+                <div class="card stats-card status-pending">
+                    <div class="card-body">
+                        <h4>@Model.Count(p => p.Status == "Generated")</h4>
+                        <p class="text-muted">Chờ duyệt</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card stats-card status-approved">
+                    <div class="card-body">
+                        <h4>@Model.Count(p => p.Status == "Approved")</h4>
+                        <p class="text-muted">Đã duyệt</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card stats-card status-rejected">
+                    <div class="card-body">
+                        <h4>@Model.Count(p => p.Status == "Rejected")</h4>
+                        <p class="text-muted">Bị từ chối</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card stats-card" style="border-left-color: #17a2b8 !important;">
+                    <div class="card-body">
+                        <h4>@Model.Where(p => p.Status == "Approved" || p.Status == "Paid").Sum(p => p.NetSalary).ToString("N0")</h4>
+                        <p class="text-muted">Tổng tiền (VND)</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        @if (Model.Any())
+        {
+            <!-- Bulk Actions -->
+            @if (Model.Any(p => p.Status == "Generated"))
+            {
+                <div class="card mb-3">
+                    <div class="card-body">
+                        <form id="bulkApprovalForm" method="post" action="/Master/PaySlipApproval/ApproveMultiple">
+                            @Html.AntiForgeryToken()
+                            <div class="d-flex align-items-center gap-3">
+                                <input type="checkbox" id="selectAllCheckbox" onchange="toggleSelectAll()">
+                                <label for="selectAllCheckbox">Chọn tất cả</label>
+                                <button type="button" class="btn btn-success btn-sm" onclick="approveSelected()">
+                                    <i class="fas fa-check-double"></i> Duyệt đã chọn
+                                </button>
+                                <small class="text-muted">Chỉ duyệt các phiếu lương đang chờ duyệt</small>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            }
+
+            <!-- PaySlips Table -->
+            <div class="card">
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead class="table-light">
+                                <tr>
+                                    @if (Model.Any(p => p.Status == "Generated"))
+                                    {
+                                        <th width="40">
+                                            <input type="checkbox" id="headerCheckbox" onchange="toggleSelectAll()">
+                                        </th>
+                                    }
+                                    <th>Nhân viên</th>
+                                    <th>Kỳ lương</th>
+                                    <th>Lương cơ bản</th>
+                                    <th>Thực nhận</th>
+                                    <th>Trạng thái</th>
+                                    <th>Ngày tạo</th>
+                                    <th>Thao tác</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var paySlip in Model)
+                                {
+                                    <tr>
+                                        @if (Model.Any(p => p.Status == "Generated"))
+                                        {
+                                            <td>
+                                                @if (paySlip.Status == "Generated")
+                                                {
+                                                    <input type="checkbox" name="paySlipIds" value="@paySlip.PaySlipID" class="payslip-checkbox">
+                                                }
+                                            </td>
+                                        }
+                                        <td>
+                                            <div class="d-flex align-items-center">
+                                                <i class="fas fa-user-circle fa-lg me-2 text-primary"></i>
+                                                <div>
+                                                    <strong>@paySlip.User.FullName</strong><br>
+                                                    <small class="text-muted">@paySlip.User.Username</small>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            @paySlip.PayPeriodStart.ToString("dd/MM") - @paySlip.PayPeriodEnd.ToString("dd/MM/yyyy")
+                                        </td>
+                                        <td>
+                                            <strong>@paySlip.BasicSalary.ToString("N0") VND</strong><br>
+                                            <small class="text-muted">@paySlip.TotalHours giờ × @paySlip.HourlyRate.ToString("N0")</small>
+                                        </td>
+                                        <td>
+                                            <strong class="text-success">@paySlip.NetSalary.ToString("N0") VND</strong>
+                                            @if (paySlip.Bonus > 0)
+                                            {
+                                                <br><small class="text-info">+@paySlip.Bonus.ToString("N0") thưởng</small>
+                                            }
+                                            @if (paySlip.Deduction > 0)
+                                            {
+                                                <br><small class="text-warning">-@paySlip.Deduction.ToString("N0") khấu trừ</small>
+                                            }
+                                        </td>
+                                        <td>
+                                            @switch (paySlip.Status)
+                                            {
+                                                case "Generated":
+                                                    <span class="badge bg-warning">Chờ duyệt</span>
+                                                    break;
+                                                case "Approved":
+                                                    <span class="badge bg-success">Đã duyệt</span>
+                                                    break;
+                                                case "Rejected":
+                                                    <span class="badge bg-danger">Bị từ chối</span>
+                                                    break;
+                                                case "Paid":
+                                                    <span class="badge bg-info">Đã thanh toán</span>
+                                                    break;
+                                            }
+                                        </td>
+                                        <td>
+                                            @paySlip.CreatedAt.ToString("dd/MM/yyyy HH:mm")
+                                        </td>
+                                        <td>
+                                            <div class="btn-group btn-group-sm">
+                                                <a href="/Master/PaySlipApproval/Details/@paySlip.PaySlipID" class="btn btn-outline-primary">
+                                                    <i class="fas fa-eye"></i>
+                                                </a>
+                                                @if (paySlip.Status == "Generated")
+                                                {
+                                                    <button class="btn btn-outline-success" onclick="quickApprove('@paySlip.PaySlipID')">
+                                                        <i class="fas fa-check"></i>
+                                                    </button>
+                                                }
+                                                @if (paySlip.Status == "Approved")
+                                                {
+                                                    <button class="btn btn-outline-info" onclick="markAsPaid('@paySlip.PaySlipID')">
+                                                        <i class="fas fa-money-bill"></i>
+                                                    </button>
+                                                }
+                                            </div>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        }
+        else
+        {
+            <div class="text-center py-5">
+                <i class="fas fa-money-bill-wave fa-4x text-muted mb-3"></i>
+                <h5 class="text-muted">Không có phiếu lương nào</h5>
+                <p class="text-muted">Chưa có phiếu lương nào được tạo</p>
+            </div>
+        }
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        function filterByStatus() {
+            const status = document.getElementById('statusFilter').value;
+            window.location.href = `/Master/PaySlipApproval?status=${status}`;
+        }
+
+        function toggleSelectAll() {
+            const selectAllCheckbox = document.getElementById('selectAllCheckbox') || document.getElementById('headerCheckbox');
+            const payslipCheckboxes = document.querySelectorAll('.payslip-checkbox');
+            
+            payslipCheckboxes.forEach(checkbox => {
+                checkbox.checked = selectAllCheckbox.checked;
+            });
+        }
+
+        function approveSelected() {
+            const selectedPaySlips = document.querySelectorAll('.payslip-checkbox:checked');
+            
+            if (selectedPaySlips.length === 0) {
+                alert('Vui lòng chọn ít nhất một phiếu lương để duyệt!');
+                return;
+            }
+
+            if (confirm(`Bạn có chắc muốn duyệt ${selectedPaySlips.length} phiếu lương đã chọn?`)) {
+                document.getElementById('bulkApprovalForm').submit();
+            }
+        }
+
+        function quickApprove(paySlipId) {
+            if (confirm('Bạn có chắc muốn duyệt phiếu lương này?')) {
+                $.post('/Master/PaySlipApproval/Approve', { 
+                    id: paySlipId,
+                    __RequestVerificationToken: $('input[name="__RequestVerificationToken"]').val()
+                })
+                .done(function() {
+                    location.reload();
+                })
+                .fail(function() {
+                    alert('Có lỗi xảy ra khi duyệt phiếu lương');
+                });
+            }
+        }
+
+        function markAsPaid(paySlipId) {
+            if (confirm('Đánh dấu phiếu lương này đã thanh toán?')) {
+                $.post('/Master/PaySlipApproval/MarkAsPaid', { 
+                    id: paySlipId,
+                    __RequestVerificationToken: $('input[name="__RequestVerificationToken"]').val()
+                })
+                .done(function() {
+                    location.reload();
+                })
+                .fail(function() {
+                    alert('Có lỗi xảy ra');
+                });
+            }
+        }
+    </script>
+}

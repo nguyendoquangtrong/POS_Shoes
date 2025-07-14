@@ -1,0 +1,159 @@
+<!-- Areas/Manager/Views/Assignment/Edit.cshtml -->
+@model POS_Shoes.Models.Entities.Assignment
+@{
+    ViewData["Title"] = "Chỉnh Sửa Lịch Làm Việc";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h1><i class="fas fa-edit"></i> Chỉnh Sửa Lịch Làm Việc</h1>
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a asp-action="Index">Lịch Làm Việc</a></li>
+            <li class="breadcrumb-item active">Chỉnh Sửa</li>
+        </ol>
+    </nav>
+</div>
+
+<div class="row">
+    <div class="col-md-8">
+        <form asp-action="Edit" method="post">
+            <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+            
+            <!-- Hidden fields cho HTTP PUT -->
+            <input type="hidden" name="_method" value="PUT" />
+            <input type="hidden" asp-for="AssignmentID" />
+            
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-info-circle"></i> Thông Tin Lịch Làm Việc</h5>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label asp-for="UserID" class="form-label">
+                            <i class="fas fa-user"></i> Nhân Viên <span class="text-danger">*</span>
+                        </label>
+                        <select asp-for="UserID" class="form-select" asp-items="ViewBag.UserID">
+                            <option value="">-- Chọn Nhân Viên --</option>
+                        </select>
+                        <span asp-validation-for="UserID" class="text-danger"></span>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label asp-for="Description" class="form-label">
+                            <i class="fas fa-file-alt"></i> Mô Tả Công Việc
+                        </label>
+                        <textarea asp-for="Description" class="form-control" rows="4" 
+                                  placeholder="Nhập mô tả chi tiết về công việc..."></textarea>
+                        <span asp-validation-for="Description" class="text-danger"></span>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label asp-for="Shift" class="form-label">
+                                    <i class="fas fa-clock"></i> Ca Làm Việc <span class="text-danger">*</span>
+                                </label>
+                                <select asp-for="Shift" class="form-select">
+                                    <option value="">-- Chọn Ca Làm Việc --</option>
+                                    <option value="Sáng">Ca Sáng (6:00 - 14:00)</option>
+                                    <option value="Chiều">Ca Chiều (14:00 - 22:00)</option>
+                                    <option value="Tối">Ca Tối (22:00 - 6:00)</option>
+                                    <option value="Toàn thời gian">Toàn Thời Gian</option>
+                                </select>
+                                <span asp-validation-for="Shift" class="text-danger"></span>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label asp-for="Date" class="form-label">
+                                    <i class="fas fa-calendar"></i> Ngày Làm Việc <span class="text-danger">*</span>
+                                </label>
+                                <input asp-for="Date" type="date" class="form-control" />
+                                <span asp-validation-for="Date" class="text-danger"></span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label asp-for="StartTime" class="form-label">
+                                    <i class="fas fa-play"></i> Giờ Bắt Đầu <span class="text-danger">*</span>
+                                </label>
+                                <input asp-for="StartTime" type="time" class="form-control" />
+                                <span asp-validation-for="StartTime" class="text-danger"></span>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label asp-for="EndTime" class="form-label">
+                                    <i class="fas fa-stop"></i> Giờ Kết Thúc <span class="text-danger">*</span>
+                                </label>
+                                <input asp-for="EndTime" type="time" class="form-control" />
+                                <span asp-validation-for="EndTime" class="text-danger"></span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="card-footer d-flex justify-content-between">
+                    <div>
+                        <a asp-action="Index" class="btn btn-secondary">
+                            <i class="fas fa-arrow-left"></i> Quay Lại
+                        </a>
+                    </div>
+                    <div>
+                        <a asp-action="Details" asp-route-id="@Model.AssignmentID" class="btn btn-outline-info">
+                            <i class="fas fa-eye"></i> Xem Chi Tiết
+                        </a>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save"></i> Cập Nhật
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </form>
+    </div>
+    
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header">
+                <h6 class="mb-0"><i class="fas fa-lightbulb"></i> Gợi Ý</h6>
+            </div>
+            <div class="card-body">
+                <ul class="list-unstyled mb-0">
+                    <li class="mb-2"><i class="fas fa-check text-success"></i> Kiểm tra thời gian không trùng lặp</li>
+                    <li class="mb-2"><i class="fas fa-check text-success"></i> Đảm bảo nhân viên có sẵn</li>
+                    <li class="mb-2"><i class="fas fa-check text-success"></i> Mô tả rõ ràng công việc</li>
+                    <li><i class="fas fa-check text-success"></i> Thời gian hợp lý cho ca làm</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script>
+        // Auto-fill time based on shift selection
+        document.getElementById('Shift').addEventListener('change', function() {
+            const startTime = document.getElementById('StartTime');
+            const endTime = document.getElementById('EndTime');
+            
+            switch(this.value) {
+                case 'Sáng':
+                    startTime.value = '06:00';
+                    endTime.value = '14:00';
+                    break;
+                case 'Chiều':
+                    startTime.value = '14:00';
+                    endTime.value = '22:00';
+                    break;
+                case 'Tối':
+                    startTime.value = '22:00';
+                    endTime.value = '06:00';
+                    break;
+            }
+        });
+    </script>
+}

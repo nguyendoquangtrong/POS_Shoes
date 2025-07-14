@@ -1,0 +1,224 @@
+<!-- Areas/Master/Views/PaySlipApproval/Details.cshtml -->
+@model PaySlip
+@{
+    ViewData["Title"] = "Chi tiết phiếu lương";
+    Layout = "~/Areas/Master/Views/Shared/_Layout.cshtml";
+}
+
+<div class="row">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5><i class="fas fa-money-bill-wave"></i> Chi tiết phiếu lương</h5>
+                @switch (Model.Status)
+                {
+                    case "Generated":
+                        <span class="badge bg-warning fs-6">Chờ duyệt</span>
+                        break;
+                    case "Approved":
+                        <span class="badge bg-success fs-6">Đã duyệt</span>
+                        break;
+                    case "Rejected":
+                        <span class="badge bg-danger fs-6">Bị từ chối</span>
+                        break;
+                    case "Paid":
+                        <span class="badge bg-info fs-6">Đã thanh toán</span>
+                        break;
+                }
+            </div>
+            <div class="card-body">
+                <!-- Employee Info -->
+                <div class="row mb-4">
+                    <div class="col-6">
+                        <h6 class="text-muted">Thông tin nhân viên</h6>
+                        <div class="d-flex align-items-center">
+                            <i class="fas fa-user-circle fa-3x text-primary me-3"></i>
+                            <div>
+                                <h5>@Model.User.FullName</h5>
+                                <p class="text-muted mb-0">@Model.User.Username - @Model.User.Role</p>
+                                <small class="text-muted">@Model.User.Phone</small>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <h6 class="text-muted">Kỳ lương</h6>
+                        <p><strong>@Model.PayPeriodStart.ToString("dd/MM/yyyy") - @Model.PayPeriodEnd.ToString("dd/MM/yyyy")</strong></p>
+                        <p class="text-muted">Lương giờ: @Model.HourlyRate.ToString("N0") VND</p>
+                        <p class="text-muted">Tổng giờ: @Model.TotalHours giờ</p>
+                    </div>
+                </div>
+
+                <!-- Salary Details -->
+                <div class="row mb-4">
+                    <div class="col-12">
+                        <h6 class="text-muted">Chi tiết lương</h6>
+                        <div class="table-responsive">
+                            <table class="table table-bordered">
+                                <tbody>
+                                    <tr>
+                                        <td><strong>Lương cơ bản</strong></td>
+                                        <td class="text-end">@Model.BasicSalary.ToString("N0") VND</td>
+                                    </tr>
+                                    <tr>
+                                        <td>Tiền thưởng</td>
+                                        <td class="text-end">+@Model.Bonus.ToString("N0") VND</td>
+                                    </tr>
+                                    <tr>
+                                        <td>Tiền khấu trừ</td>
+                                        <td class="text-end">-@Model.Deduction.ToString("N0") VND</td>
+                                    </tr>
+                                    <tr class="table-success">
+                                        <td><strong>Thực nhận</strong></td>
+                                        <td class="text-end"><strong>@Model.NetSalary.ToString("N0") VND</strong></td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Notes -->
+                @if (!string.IsNullOrEmpty(Model.Note))
+                {
+                    <div class="mb-3">
+                        <h6 class="text-muted">Ghi chú</h6>
+                        <div class="alert alert-light">
+                            @Model.Note
+                        </div>
+                    </div>
+                }
+
+                <!-- Timeline -->
+                <div class="mb-3">
+                    <h6 class="text-muted">Lịch sử</h6>
+                    <div class="timeline">
+                        <div class="timeline-item">
+                            <i class="fas fa-plus-circle text-primary"></i>
+                            <div>
+                                <strong>Tạo phiếu lương</strong><br>
+                                <small class="text-muted">@Model.CreatedAt.ToString("dd/MM/yyyy HH:mm")</small>
+                            </div>
+                        </div>
+                        @if (Model.UpdatedAt.HasValue)
+                        {
+                            <div class="timeline-item">
+                                @switch (Model.Status)
+                                {
+                                    case "Approved":
+                                        <i class="fas fa-check-circle text-success"></i>
+                                        break;
+                                    case "Rejected":
+                                        <i class="fas fa-times-circle text-danger"></i>
+                                        break;
+                                    case "Paid":
+                                        <i class="fas fa-money-bill text-info"></i>
+                                        break;
+                                }
+                                <div>
+                                    <strong>@(Model.Status == "Approved" ? "Đã duyệt" : Model.Status == "Rejected" ? "Bị từ chối" : "Đã thanh toán")</strong><br>
+                                    <small class="text-muted">@Model.UpdatedAt.Value.ToString("dd/MM/yyyy HH:mm")</small>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header">
+                <h6><i class="fas fa-cogs"></i> Thao tác Master</h6>
+            </div>
+            <div class="card-body approval-actions p-3">
+                @if (Model.Status == "Generated")
+                {
+                    <form method="post" asp-action="Approve" asp-route-id="@Model.PaySlipID" class="mb-3">
+                        <div class="mb-3">
+                            <label class="form-label">Ghi chú duyệt (tùy chọn):</label>
+                            <textarea name="approvalNote" class="form-control" rows="3" placeholder="Nhập ghi chú khi duyệt..."></textarea>
+                        </div>
+                        <button type="submit" class="btn btn-success w-100">
+                            <i class="fas fa-check"></i> Duyệt phiếu lương
+                        </button>
+                    </form>
+
+                    <hr>
+
+                    <form method="post" asp-action="Reject" asp-route-id="@Model.PaySlipID">
+                        <div class="mb-3">
+                            <label class="form-label">Lý do từ chối:</label>
+                            <textarea name="rejectionReason" class="form-control" rows="3" placeholder="Nhập lý do từ chối..." required></textarea>
+                        </div>
+                        <button type="submit" class="btn btn-danger w-100" onclick="return confirm('Bạn có chắc muốn từ chối phiếu lương này?')">
+                            <i class="fas fa-times"></i> Từ chối phiếu lương
+                        </button>
+                    </form>
+                }
+                else if (Model.Status == "Approved")
+                {
+                    <form method="post" asp-action="MarkAsPaid" asp-route-id="@Model.PaySlipID">
+                        <button type="submit" class="btn btn-info w-100" onclick="return confirm('Đánh dấu phiếu lương này đã thanh toán?')">
+                            <i class="fas fa-money-bill"></i> Đánh dấu đã thanh toán
+                        </button>
+                    </form>
+                }
+                else
+                {
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle"></i>
+                        Phiếu lương này đã được xử lý.
+                    </div>
+                }
+
+                <hr>
+
+                <a href="/Master/PaySlipApproval" class="btn btn-secondary w-100">
+                    <i class="fas fa-arrow-left"></i> Quay lại danh sách
+                </a>
+            </div>
+        </div>
+
+        <!-- Quick Stats -->
+        <div class="card mt-3">
+            <div class="card-header">
+                <h6><i class="fas fa-chart-pie"></i> Thống kê nhanh</h6>
+            </div>
+            <div class="card-body">
+                <div class="row text-center">
+                    <div class="col-6">
+                        <h6 class="text-primary">@Model.TotalHours</h6>
+                        <small>Tổng giờ làm</small>
+                    </div>
+                    <div class="col-6">
+                        <h6 class="text-success">@Model.HourlyRate.ToString("N0")</h6>
+                        <small>Lương/giờ (VND)</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.timeline {
+    position: relative;
+    padding-left: 30px;
+}
+
+.timeline-item {
+    display: flex;
+    align-items: center;
+    margin-bottom: 15px;
+    padding: 10px;
+    background: #f8f9fa;
+    border-radius: 5px;
+    position: relative;
+}
+
+.timeline-item i {
+    margin-right: 15px;
+    width: 20px;
+}
+</style>

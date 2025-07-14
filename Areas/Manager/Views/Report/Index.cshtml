@@ -1,0 +1,175 @@
+<!-- Areas/Manager/Views/Report/Index.cshtml -->
+@model IEnumerable<Report>
+@{
+    ViewData["Title"] = "Quản lý báo cáo";
+    Layout = "~/Areas/Manager/Views/Shared/_Layout.cshtml";
+}
+
+<div class="row">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5><i class="fas fa-file-check"></i> Quản lý báo cáo hàng ngày</h5>
+                <div class="d-flex gap-2">
+                    <input type="date" id="dateFilter" class="form-control"
+                        value="@ViewBag.SelectedDate.ToString("yyyy-MM-dd")" onchange="filterReports()">
+                    <select id="statusFilter" class="form-select" onchange="filterReports()">
+                        <option value="">Tất cả trạng thái</option>
+                        <option value="Generated" selected="@(ViewBag.SelectedStatus == "Generated")">Chờ duyệt</option>
+                        <option value="Approved" selected="@(ViewBag.SelectedStatus == "Approved")">Đã duyệt</option>
+                        <option value="Rejected" selected="@(ViewBag.SelectedStatus == "Rejected")">Bị từ chối</option>
+                    </select>
+
+                    <a href="/Manager/Report/PendingReports" class="btn btn-warning">
+                        <i class="fas fa-clock"></i> Chờ duyệt (@ViewBag.PendingCount)
+                    </a>
+                </div>
+            </div>
+            <div class="card-body">
+                @if (Model.Any())
+                {
+                    <div class="row mb-3">
+                        <div class="col-md-3">
+                            <div class="card bg-primary text-white">
+                                <div class="card-body">
+                                    <h4>@Model.Count()</h4>
+                                    <p>Tổng báo cáo</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card bg-success text-white">
+                                <div class="card-body">
+                                    <h4>@Model.Sum(r => r.TotalRevenue).ToString("N0")</h4>
+                                    <p>Tổng doanh thu (VND)</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card bg-warning text-white">
+                                <div class="card-body">
+                                    <h4>@Model.Count(r => r.Status == "Generated")</h4>
+                                    <p>Chờ duyệt</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card bg-info text-white">
+                                <div class="card-body">
+                                    <h4>@Model.Count(r => r.Status == "Approved")</h4>
+                                    <p>Đã duyệt</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="table-responsive">
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>Nhân viên</th>
+                                    <th>Mô tả</th>
+                                    <th>Doanh thu</th>
+                                    <th>Đơn hàng</th>
+                                    <th>Trạng thái</th>
+                                    <th>Ngày tạo</th>
+                                    <th>Thao tác</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var report in Model)
+                                {
+                                    <tr>
+                                        <td>
+                                            <div class="d-flex align-items-center">
+                                                <i class="fas fa-user-circle fa-lg me-2 text-primary"></i>
+                                                <div>
+                                                    <strong>@report.User.FullName</strong><br>
+                                                    <small class="text-muted">@report.User.Username</small>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td>@report.Description</td>
+                                        <td>
+                                            <strong class="text-success">@report.TotalRevenue.ToString("N0") VND</strong>
+                                        </td>
+                                        <td>
+                                            <span class="badge bg-info">@report.TotalOrders</span>
+                                        </td>
+                                        <td>
+                                            @switch (report.Status)
+                                            {
+                                                case "Generated":
+                                                    <span class="badge bg-warning">Chờ duyệt</span>
+                                                    break;
+                                                case "Approved":
+                                                    <span class="badge bg-success">Đã duyệt</span>
+                                                    break;
+                                                case "Rejected":
+                                                    <span class="badge bg-danger">Bị từ chối</span>
+                                                    break;
+                                                default:
+                                                    <span class="badge bg-secondary">@report.Status</span>
+                                                    break;
+                                            }
+                                        </td>
+                                        <td>@report.CreatedAt.ToString("dd/MM/yyyy HH:mm")</td>
+                                        <td>
+                                            <div class="btn-group btn-group-sm">
+                                                <a href="/Manager/Report/Details/@report.ReportID"
+                                                    class="btn btn-outline-primary">
+                                                    <i class="fas fa-eye"></i> Chi tiết
+                                                </a>
+                                                @if (report.Status == "Generated")
+                                                {
+                                                    <button class="btn btn-outline-success"
+                                                        onclick="quickApprove('@report.ReportID')">
+                                                        <i class="fas fa-check"></i> Duyệt
+                                                    </button>
+                                                }
+                                            </div>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                }
+                else
+                {
+                    <div class="text-center py-5">
+                        <i class="fas fa-file-excel fa-4x text-muted mb-3"></i>
+                        <h5 class="text-muted">Không có báo cáo nào</h5>
+                        <p class="text-muted">Chưa có báo cáo nào cho ngày @ViewBag.SelectedDate.ToString("dd/MM/yyyy")</p>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        function filterReports() {
+            const selectedDate = document.getElementById('dateFilter').value;
+            const selectedStatus = document.getElementById('statusFilter').value;
+            const url = `/Manager/Report/Index?date=${selectedDate}&status=${selectedStatus}`;
+            window.location.href = url;
+        }
+
+        function quickApprove(reportId) {
+            if (confirm('Bạn có chắc muốn duyệt báo cáo này?')) {
+                $.post('/Manager/Report/Approve', {
+                    id: reportId,
+                    __RequestVerificationToken: $('input[name="__RequestVerificationToken"]').val()
+                })
+                    .done(function () {
+                        location.reload();
+                    })
+                    .fail(function () {
+                        alert('Có lỗi xảy ra khi duyệt báo cáo');
+                    });
+            }
+        }
+    </script>
+}

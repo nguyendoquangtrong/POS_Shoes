@@ -1,0 +1,59 @@
+<!-- Areas/Manager/Views/Assignment/Index.cshtml -->
+@model IEnumerable<POS_Shoes.Models.Entities.Assignment>
+@{
+    ViewData["Title"] = "Quản Lý Lịch Làm Việc";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h1><i class="fas fa-calendar-alt"></i> Quản Lý Lịch Làm Việc</h1>
+    <a asp-action="Create" class="btn btn-primary">
+        <i class="fas fa-plus"></i> Thêm Lịch Mới
+    </a>
+</div>
+
+<div class="card">
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-striped">
+                <thead>
+                    <tr>
+                        <th>Nhân Viên</th>
+                        <th>Mô Tả</th>
+                        <th>Ca Làm</th>
+                        <th>Ngày</th>
+                        <th>Giờ Bắt Đầu</th>
+                        <th>Giờ Kết Thúc</th>
+                        <th>Thao Tác</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var item in Model)
+                    {
+                        <tr>
+                            <td>@item.User.Username</td>
+                            <td>@item.Description</td>
+                            <td><span class="badge bg-info">@item.Shift</span></td>
+                            <td>@item.Date.ToString("dd/MM/yyyy")</td>
+                            <td>@item.StartTime.ToString("HH:mm")</td>
+                            <td>@item.EndTime.ToString("HH:mm")</td>
+                            <td>
+                                <a asp-action="Edit" asp-route-id="@item.AssignmentID"
+                                    class="btn btn-sm btn-outline-primary">
+                                    <i class="fas fa-edit"></i>
+                                </a>
+                                <a asp-action="Details" asp-route-id="@item.AssignmentID"
+                                    class="btn btn-sm btn-outline-info">
+                                    <i class="fas fa-eye"></i>
+                                </a>
+                                <a asp-action="Delete" asp-route-id="@item.AssignmentID"
+                                    class="btn btn-sm btn-outline-danger">
+                                    <i class="fas fa-trash"></i>
+                                </a>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>

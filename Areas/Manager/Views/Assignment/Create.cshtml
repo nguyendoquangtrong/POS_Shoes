@@ -1,0 +1,84 @@
+<!-- Areas/Manager/Views/Assignment/Create.cshtml -->
+@model POS_Shoes.Models.Entities.Assignment
+@{
+    ViewData["Title"] = "Tạo Lịch Làm Việc";
+}
+
+<h1><i class="fas fa-plus"></i> Tạo Lịch Làm Việc</h1>
+
+<div class="row">
+    <div class="col-md-8">
+        <form asp-action="Create">
+            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+
+            <div class="card">
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label asp-for="UserID" class="form-label">Nhân Viên</label>
+                        <select asp-for="UserID" class="form-select" asp-items="ViewBag.UserID">
+                            <option value="">-- Chọn Nhân Viên --</option>
+                        </select>
+                        <span asp-validation-for="UserID" class="text-danger"></span>
+                    </div>
+
+                    <div class="mb-3">
+                        <label asp-for="Description" class="form-label">Mô Tả</label>
+                        <textarea asp-for="Description" class="form-control" rows="3"></textarea>
+                        <span asp-validation-for="Description" class="text-danger"></span>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label asp-for="Shift" class="form-label">Ca Làm</label>
+                                <select asp-for="Shift" class="form-select">
+                                    <option value="">-- Chọn Ca --</option>
+                                    <option value="Sáng">Ca Sáng</option>
+                                    <option value="Chiều">Ca Chiều</option>
+                                    <option value="Tối">Ca Tối</option>
+                                </select>
+                                <span asp-validation-for="Shift" class="text-danger"></span>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label asp-for="Date" class="form-label">Ngày</label>
+                                <input asp-for="Date" type="date" class="form-control" />
+                                <span asp-validation-for="Date" class="text-danger"></span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label asp-for="StartTime" class="form-label">Giờ Bắt Đầu</label>
+                                <input asp-for="StartTime" type="time" class="form-control" />
+                                <span asp-validation-for="StartTime" class="text-danger"></span>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label asp-for="EndTime" class="form-label">Giờ Kết Thúc</label>
+                                <input asp-for="EndTime" type="time" class="form-control" />
+                                <span asp-validation-for="EndTime" class="text-danger"></span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-footer">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save"></i> Lưu
+                    </button>
+                    <a asp-action="Index" class="btn btn-secondary">
+                        <i class="fas fa-arrow-left"></i> Quay Lại
+                    </a>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

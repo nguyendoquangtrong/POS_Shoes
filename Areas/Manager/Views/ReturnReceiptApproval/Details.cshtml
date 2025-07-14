@@ -1,0 +1,189 @@
+<!-- Areas/Manager/Views/ReturnReceiptApproval/Details.cshtml -->
+@model ReturnReceipt
+@{
+    ViewData["Title"] = "Chi tiết phiếu trả hàng";
+    var order = ViewBag.Order as Order;
+}
+
+<div class="row">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5><i class="fas fa-undo"></i> Chi tiết phiếu trả hàng</h5>
+                @switch (Model.Status)
+                {
+                    case "Progressing":
+                        <span class="badge bg-warning fs-6">Chờ duyệt</span>
+                        break;
+                    case "Approved":
+                        <span class="badge bg-success fs-6">Đã duyệt</span>
+                        break;
+                    case "Rejected":
+                        <span class="badge bg-danger fs-6">Bị từ chối</span>
+                        break;
+                }
+            </div>
+            <div class="card-body">
+                <!-- Return Receipt Info -->
+                <div class="row mb-4">
+                    <div class="col-6">
+                        <h6 class="text-muted">Thông tin phiếu trả</h6>
+                        <p><strong>Mã phiếu:</strong> #@Model.ReturnReceiptID.ToString().Substring(0, 8)</p>
+                        <p><strong>Ngày tạo:</strong> @Model.Date.ToString("dd/MM/yyyy")</p>
+                        <p><strong>Số lượng trả:</strong> <span class="badge bg-info">@Model.Quantity</span></p>
+                    </div>
+                    <div class="col-6">
+                        <h6 class="text-muted">Đơn hàng gốc</h6>
+                        @if (order != null)
+                        {
+                            <p><strong>Mã đơn hàng:</strong> #@order.OrderID.ToString().Substring(0, 8)</p>
+                            <p><strong>Ngày đặt:</strong> @order.OrderDate.ToString("dd/MM/yyyy")</p>
+                            <p><strong>Tổng tiền:</strong> @order.TotalPrice.ToString("N0") VND</p>
+                        }
+                    </div>
+                </div>
+
+                <!-- Customer Info -->
+                @if (order?.Customer != null)
+                {
+                    <div class="row mb-4">
+                        <div class="col-12">
+                            <h6 class="text-muted">Thông tin khách hàng</h6>
+                            <div class="d-flex align-items-center">
+                                <i class="fas fa-user-circle fa-2x text-primary me-3"></i>
+                                <div>
+                                    <h6>@order.Customer.Name</h6>
+                                    <p class="text-muted mb-0">@order.Customer.Phone</p>
+                                    @if (!string.IsNullOrEmpty(order.Customer.Email))
+                                    {
+                                        <small class="text-muted">@order.Customer.Email</small>
+                                    }
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                }
+
+                <!-- Order Details -->
+                @if (order?.OrderDetails != null && order.OrderDetails.Any())
+                {
+                    <div class="mb-4">
+                        <h6 class="text-muted">Chi tiết đơn hàng gốc</h6>
+                        <div class="table-responsive">
+                            <table class="table table-bordered">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Sản phẩm</th>
+                                        <th>Số lượng</th>
+                                        <th>Đơn giá</th>
+                                        <th>Thành tiền</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var detail in order.OrderDetails)
+                                    {
+                                        <tr>
+                                            <td>@detail.Product.ProductName</td>
+                                            <td>@detail.Quantity</td>
+                                            <td>@detail.UnitPrice.ToString("N0") VND</td>
+                                            <td>@((detail.UnitPrice * detail.Quantity).ToString("N0")) VND</td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                }
+
+                <!-- Return Reason -->
+                <div class="mb-4">
+                    <h6 class="text-muted">Lý do trả hàng</h6>
+                    <div class="alert alert-light">
+                        @Model.Reason
+                    </div>
+                </div>
+
+                <!-- Staff Info -->
+                @if (order?.User != null)
+                {
+                    <div class="mb-3">
+                        <h6 class="text-muted">Nhân viên xử lý</h6>
+                        <p><i class="fas fa-user-tag text-primary"></i> @order.User.FullName (@order.User.Username)</p>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header">
+                <h6><i class="fas fa-cogs"></i> Thao tác Master</h6>
+            </div>
+            <div class="card-body approval-actions p-3">
+                @if (Model.Status == "Progressing")
+                {
+                    <form method="post" asp-action="Approve" asp-route-id="@Model.ReturnReceiptID" class="mb-3">
+                        <div class="mb-3">
+                            <label class="form-label">Ghi chú duyệt (tùy chọn):</label>
+                            <textarea name="approvalNote" class="form-control" rows="3"
+                            placeholder="Nhập ghi chú khi duyệt..."></textarea>
+                        </div>
+                        <button type="submit" class="btn btn-success w-100">
+                            <i class="fas fa-check"></i> Duyệt phiếu trả hàng
+                        </button>
+                    </form>
+
+                    <hr>
+
+                    <form method="post" asp-action="Reject" asp-route-id="@Model.ReturnReceiptID">
+                        <div class="mb-3">
+                            <label class="form-label">Lý do từ chối:</label>
+                            <textarea name="rejectionReason" class="form-control" rows="3"
+                            placeholder="Nhập lý do từ chối..." required></textarea>
+                        </div>
+                        <button type="submit" class="btn btn-danger w-100"
+                            onclick="return confirm('Bạn có chắc muốn từ chối phiếu trả hàng này?')">
+                            <i class="fas fa-times"></i> Từ chối phiếu trả hàng
+                        </button>
+                    </form>
+                }
+                else
+                {
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle"></i>
+                        Phiếu trả hàng này đã được xử lý.
+                    </div>
+                }
+
+                <hr>
+
+                <a href="/Master/ReturnReceiptApproval" class="btn btn-secondary w-100">
+                    <i class="fas fa-arrow-left"></i> Quay lại danh sách
+                </a>
+            </div>
+        </div>
+
+        <!-- Order Summary -->
+        @if (order != null)
+        {
+            <div class="card mt-3">
+                <div class="card-header">
+                    <h6><i class="fas fa-shopping-cart"></i> Tóm tắt đơn hàng</h6>
+                </div>
+                <div class="card-body">
+                    <div class="row text-center">
+                        <div class="col-6">
+                            <h6 class="text-primary">@order.OrderDetails.Sum(d => d.Quantity)</h6>
+                            <small>Tổng sản phẩm</small>
+                        </div>
+                        <div class="col-6">
+                            <h6 class="text-success">@order.TotalPrice.ToString("N0")</h6>
+                            <small>Tổng tiền (VND)</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+</div>

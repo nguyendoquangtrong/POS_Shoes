@@ -1,0 +1,105 @@
+@using POS_Shoes.Models.ViewModels
+
+@model ApprovedReportsViewModel
+@{
+    ViewData["Title"] = "Báo cáo ngày đã duyệt";
+    Layout = "~/Areas/Accountant/Views/Shared/_Layout.cshtml";
+}
+
+<h4 class="mb-4">
+    <i class="fas fa-file-check text-success"></i>
+    Báo cáo doanh thu đã duyệt
+</h4>
+
+<form class="row g-2 mb-3">
+    <div class="col-md-3">
+        <label class="form-label">Từ ngày</label>
+        <input type="date" name="fromDate" class="form-control" value="@Model.FromDate:yyyy-MM-dd">
+    </div>
+    <div class="col-md-3">
+        <label class="form-label">Đến ngày</label>
+        <input type="date" name="toDate" class="form-control" value="@Model.ToDate:yyyy-MM-dd">
+    </div>
+    <div class="col-md-3 d-flex align-items-end">
+        <button class="btn btn-primary w-100">
+            <i class="fas fa-filter"></i> Lọc
+        </button>
+    </div>
+</form>
+
+@if (!Model.Reports.Any())
+{
+    <div class="alert alert-info">
+        <i class="fas fa-info-circle"></i> Không tìm thấy báo cáo phù hợp
+    </div>
+}
+else
+{
+    <div class="row text-center mb-4">
+        <div class="col-md-3">
+            <div class="card bg-success text-white">
+                <div class="card-body">
+                    <h4>@Model.TotalRevenue.ToString("N0")</h4>
+                    <p class="mb-0">Tổng doanh thu (VND)</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-primary text-white">
+                <div class="card-body">
+                    <h4>@Model.TotalOrders</h4>
+                    <p class="mb-0">Tổng đơn hàng</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-info text-white">
+                <div class="card-body">
+                    <h4>@Model.AverageOrderValue.ToString("N0")</h4>
+                    <p class="mb-0">Giá trị đơn TB (VND)</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-warning text-white">
+                <div class="card-body">
+                    <h4>@Model.Reports.Count</h4>
+                    <p class="mb-0">Số báo cáo</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="table-responsive">
+        <table class="table table-striped">
+            <thead>
+                <tr>
+                    <th>Ngày</th>
+                    <th>Nhân viên</th>
+                    <th>Mô tả</th>
+                    <th>Doanh thu</th>
+                    <th>Đơn hàng</th>
+                    <th>Chi tiết</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var r in Model.Reports)
+                {
+                    <tr>
+                        <td>@r.Date:dd/MM/yyyy</td>
+                        <td>@r.User?.FullName</td>
+                        <td>@r.Description</td>
+                        <td>@r.TotalRevenue.ToString("N0") VND</td>
+                        <td>@r.TotalOrders</td>
+                        <td>
+                            <a class="btn btn-sm btn-outline-primary" href="/Saler/Report/ViewReport/@r.ReportID"
+                                target="_blank">
+                                <i class="fas fa-eye"></i>
+                            </a>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}

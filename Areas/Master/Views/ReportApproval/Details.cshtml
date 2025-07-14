@@ -1,0 +1,221 @@
+<!-- Areas/Master/Views/ReportApproval/Details.cshtml -->
+@model Report
+@{
+    ViewData["Title"] = "Chi tiết báo cáo tháng";
+    Layout = "~/Areas/Master/Views/Shared/_Layout.cshtml";
+}
+
+<div class="row">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5><i class="fas fa-chart-line"></i> Chi tiết báo cáo tháng</h5>
+                @switch (Model.Status)
+                {
+                    case "Generated":
+                        <span class="badge bg-warning fs-6">Chờ duyệt</span>
+                        break;
+                    case "Approved":
+                        <span class="badge bg-success fs-6">Đã duyệt</span>
+                        break;
+                    case "Rejected":
+                        <span class="badge bg-danger fs-6">Bị từ chối</span>
+                        break;
+                }
+            </div>
+            <div class="card-body">
+                <!-- Report Info -->
+                <div class="row mb-4">
+                    <div class="col-6">
+                        <h6 class="text-muted">Người lập báo cáo</h6>
+                        <div class="d-flex align-items-center">
+                            <i class="fas fa-user-circle fa-2x text-primary me-3"></i>
+                            <div>
+                                <h6>@Model.User.FullName</h6>
+                                <p class="text-muted mb-0">@Model.User.Username - @Model.User.Role</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <h6 class="text-muted">Thời gian báo cáo</h6>
+                        <p><strong>Tháng @Model.Date.ToString("MM/yyyy")</strong></p>
+                        <p class="text-muted">Tạo lúc: @Model.CreatedAt.ToString("dd/MM/yyyy HH:mm")</p>
+                        @if (Model.UpdatedAt.HasValue)
+                        {
+                            <p class="text-muted">Cập nhật: @Model.UpdatedAt.Value.ToString("dd/MM/yyyy HH:mm")</p>
+                        }
+                    </div>
+                </div>
+
+                <!-- Revenue Summary -->
+                <div class="row mb-4">
+                    <div class="col-12">
+                        <h6 class="text-muted">Tóm tắt doanh thu</h6>
+                        <div class="row">
+                            <div class="col-md-4">
+                                <div class="card bg-success text-white">
+                                    <div class="card-body text-center">
+                                        <h4>@Model.TotalRevenue.ToString("N0")</h4>
+                                        <p>Tổng doanh thu (VND)</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="card bg-primary text-white">
+                                    <div class="card-body text-center">
+                                        <h4>@Model.TotalOrders</h4>
+                                        <p>Tổng đơn hàng</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="card bg-info text-white">
+                                    <div class="card-body text-center">
+                                        <h4>@Model.AverageOrderValue.ToString("N0")</h4>
+                                        <p>Giá trị TB (VND)</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Description -->
+                <div class="mb-4">
+                    <h6 class="text-muted">Mô tả báo cáo</h6>
+                    <div class="alert alert-light">
+                        @Model.Description
+                    </div>
+                </div>
+
+                <!-- View Full Report -->
+                <div class="mb-3">
+                    <a href="/Accountant/Revenue/ViewMonthlyReport/@Model.ReportID" target="_blank"
+                        class="btn btn-outline-primary">
+                        <i class="fas fa-external-link-alt"></i> Xem báo cáo chi tiết
+                    </a>
+                </div>
+
+                <!-- Timeline -->
+                <div class="mb-3">
+                    <h6 class="text-muted">Lịch sử</h6>
+                    <div class="timeline">
+                        <div class="timeline-item">
+                            <i class="fas fa-plus-circle text-primary"></i>
+                            <div>
+                                <strong>Tạo báo cáo</strong><br>
+                                <small class="text-muted">@Model.CreatedAt.ToString("dd/MM/yyyy HH:mm")</small>
+                            </div>
+                        </div>
+                        @if (Model.UpdatedAt.HasValue)
+                        {
+                            <div class="timeline-item">
+                                @switch (Model.Status)
+                                {
+                                    case "Approved":
+                                        <i class="fas fa-check-circle text-success"></i>
+                                        break;
+                                    case "Rejected":
+                                        <i class="fas fa-times-circle text-danger"></i>
+                                        break;
+                                }
+                                <div>
+                                    <strong>@(Model.Status == "Approved" ? "Đã duyệt" : "Bị từ chối")</strong><br>
+                                    <small class="text-muted">@Model.UpdatedAt.Value.ToString("dd/MM/yyyy HH:mm")</small>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header">
+                <h6><i class="fas fa-cogs"></i> Thao tác Master</h6>
+            </div>
+            <div class="card-body approval-actions p-3">
+                @if (Model.Status == "Generated")
+                {
+                    <form method="post" asp-action="Approve" asp-route-id="@Model.ReportID" class="mb-3">
+                        <div class="mb-3">
+                            <label class="form-label">Ghi chú duyệt (tùy chọn):</label>
+                            <textarea name="approvalNote" class="form-control" rows="3"
+                            placeholder="Nhập ghi chú khi duyệt..."></textarea>
+                        </div>
+                        <button type="submit" class="btn btn-success w-100">
+                            <i class="fas fa-check"></i> Duyệt báo cáo
+                        </button>
+                    </form>
+
+                    <hr>
+
+                    <form method="post" asp-action="Reject" asp-route-id="@Model.ReportID">
+                        <div class="mb-3">
+                            <label class="form-label">Lý do từ chối:</label>
+                            <textarea name="rejectionReason" class="form-control" rows="3"
+                            placeholder="Nhập lý do từ chối..." required></textarea>
+                        </div>
+                        <button type="submit" class="btn btn-danger w-100"
+                            onclick="return confirm('Bạn có chắc muốn từ chối báo cáo này?')">
+                            <i class="fas fa-times"></i> Từ chối báo cáo
+                        </button>
+                    </form>
+                }
+                else
+                {
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle"></i>
+                        Báo cáo này đã được xử lý.
+                    </div>
+                }
+
+                <hr>
+
+                <a href="/Master/ReportApproval" class="btn btn-secondary w-100">
+                    <i class="fas fa-arrow-left"></i> Quay lại danh sách
+                </a>
+            </div>
+        </div>
+
+        <!-- Quick Stats -->
+        <div class="card mt-3">
+            <div class="card-header">
+                <h6><i class="fas fa-calculator"></i> Thống kê nhanh</h6>
+            </div>
+            <div class="card-body">
+                <div class="row text-center">
+                    <div class="col-12 mb-3">
+                        <h6 class="text-success">@((Model.TotalOrders > 0 ? Model.TotalRevenue / Model.TotalOrders :
+                                                        0).ToString("N0"))</h6>
+                        <small>Doanh thu TB/đơn</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .timeline {
+        position: relative;
+        padding-left: 30px;
+    }
+
+    .timeline-item {
+        display: flex;
+        align-items: center;
+        margin-bottom: 15px;
+        padding: 10px;
+        background: #f8f9fa;
+        border-radius: 5px;
+        position: relative;
+    }
+
+    .timeline-item i {
+        margin-right: 15px;
+        width: 20px;
+    }
+</style>

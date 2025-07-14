@@ -1,0 +1,211 @@
+@using POS_Shoes.Models.ViewModels
+<!-- Areas/Accountant/Views/PaySlip/Details.cshtml -->
+@model PaySlip
+@{
+    ViewData["Title"] = "Chi tiết phiếu lương";
+    Layout = "~/Areas/Accountant/Views/Shared/_Layout.cshtml";
+}
+
+<div class="row" id="paySlipContent">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-body">
+                <div class="text-center mb-4">
+                    <h2>PHIẾU LƯƠNG</h2>
+                    <p class="text-muted">Kỳ lương: @Model.PayPeriodStart.ToString("dd/MM/yyyy") -
+                        @Model.PayPeriodEnd.ToString("dd/MM/yyyy")</p>
+                </div>
+
+                <div class="row mb-3">
+                    <div class="col-6">
+                        <strong>Nhân viên:</strong> @Model.User.FullName
+                    </div>
+                    <div class="col-6">
+                        <strong>Chức vụ:</strong> @Model.User.Role
+                    </div>
+                </div>
+
+                <div class="row mb-3">
+                    <div class="col-6">
+                        <strong>Lương giờ:</strong> @Model.HourlyRate.ToString("N0") VND
+                    </div>
+                    <div class="col-6">
+                        <strong>Tổng giờ làm:</strong> @Model.TotalHours giờ
+                    </div>
+                </div>
+
+                <table class="table table-bordered">
+                    <thead>
+                        <tr>
+                            <th>Khoản mục</th>
+                            <th class="text-end">Số tiền</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>Lương cơ bản</td>
+                            <td class="text-end">@Model.BasicSalary.ToString("N0") VND</td>
+                        </tr>
+                        <tr>
+                            <td>Tiền thưởng</td>
+                            <td class="text-end">@Model.Bonus.ToString("N0") VND</td>
+                        </tr>
+                        <tr>
+                            <td>Tiền khấu trừ</td>
+                            <td class="text-end">-@Model.Deduction.ToString("N0") VND</td>
+                        </tr>
+                        <tr class="table-success">
+                            <th>Thực nhận</th>
+                            <th class="text-end">@Model.NetSalary.ToString("N0") VND</th>
+                        </tr>
+                    </tbody>
+                </table>
+
+                @if (!string.IsNullOrEmpty(Model.Note))
+                {
+                    <div class="mb-3">
+                        <strong>Ghi chú:</strong> @Model.Note
+                    </div>
+                }
+
+                <div class="mb-3">
+                    <strong>Trạng thái:</strong>
+                    @switch (Model.Status)
+                    {
+                        case "Generated":
+                            <span class="badge bg-warning">Chờ duyệt</span>
+                            break;
+                        case "Approved":
+                            <span class="badge bg-success">Đã duyệt</span>
+                            break;
+                        case "Rejected":
+                            <span class="badge bg-danger">Bị từ chối</span>
+                            break;
+                        case "Paid":
+                            <span class="badge bg-info">Đã thanh toán</span>
+                            break;
+                        default:
+                            <span class="badge bg-secondary">@Model.Status</span>
+                            break;
+                    }
+                </div>
+
+                <div class="text-center">
+                    <small class="text-muted">
+                        Tạo lúc: @Model.CreatedAt.ToString("dd/MM/yyyy HH:mm")
+                    </small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header">
+                <h6><i class="fas fa-clock"></i> Lịch làm việc</h6>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-sm">
+                        <thead>
+                            <tr>
+                                <th>Ngày</th>
+                                <th>Ca</th>
+                                <th>Giờ</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var assignment in (List<AssignmentSummary>)ViewBag.Assignments)
+                            {
+                                <tr>
+                                    <td>@assignment.Date.ToString("dd/MM")</td>
+                                    <td>@assignment.Shift</td>
+                                    <td>@assignment.Hours</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div class="card mt-3">
+            <div class="card-header">
+                <h6><i class="fas fa-info-circle"></i> Thông tin phê duyệt</h6>
+            </div>
+            <div class="card-body">
+                @switch (Model.Status)
+                {
+                    case "Generated":
+                        <div class="alert alert-warning">
+                            <i class="fas fa-clock"></i>
+                            <strong>Chờ phê duyệt</strong><br>
+                            <small>Phiếu lương đang chờ Manager phê duyệt.</small>
+                        </div>
+                        break;
+                    case "Approved":
+                        <div class="alert alert-success">
+                            <i class="fas fa-check"></i>
+                            <strong>Đã được duyệt</strong><br>
+                            <small>Phiếu lương đã được Manager phê duyệt.</small>
+                        </div>
+                        <!-- Chỉ hiển thị nút thanh toán khi đã duyệt -->
+                        @if (Model.Status == "Approved")
+                        {
+                            <form method="post" action="/Manager/PaySlip/UpdateStatus/@Model.PaySlipID" class="mb-2">
+                                @Html.AntiForgeryToken()
+                                <input type="hidden" name="status" value="Paid" />
+                                <button type="submit" class="btn btn-info btn-sm w-100">
+                                    <i class="fas fa-money-bill-wave"></i> Đánh dấu đã thanh toán
+                                </button>
+                            </form>
+                        }
+                        break;
+                    case "Rejected":
+                        <div class="alert alert-danger">
+                            <i class="fas fa-times"></i>
+                            <strong>Bị từ chối</strong><br>
+                            <small>Phiếu lương đã bị Manager từ chối.</small>
+                        </div>
+                        break;
+                    case "Paid":
+                        <div class="alert alert-info">
+                            <i class="fas fa-money-bill-wave"></i>
+                            <strong>Đã thanh toán</strong><br>
+                            <small>Phiếu lương đã được thanh toán cho nhân viên.</small>
+                        </div>
+                        break;
+                }
+
+                <hr>
+
+                <button onclick="printPaySlip()" class="btn btn-primary btn-sm w-100 mb-2">
+                    <i class="fas fa-print"></i> In phiếu lương
+                </button>
+
+                <a href="/Accountant/PaySlip/Index" class="btn btn-secondary btn-sm w-100">
+                    <i class="fas fa-arrow-left"></i> Quay lại
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        function printPaySlip() {
+            const printContent = document.getElementById('paySlipContent').innerHTML;
+            const originalContent = document.body.innerHTML;
+
+            document.body.innerHTML = `
+                    <div style="padding: 20px; font-family: Arial, sans-serif;">
+                        ${printContent}
+                    </div>
+                `;
+
+            window.print();
+            document.body.innerHTML = originalContent;
+            location.reload();
+        }
+    </script>
+}

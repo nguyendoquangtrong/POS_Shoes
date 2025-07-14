@@ -1,0 +1,178 @@
+<!-- Areas/Manager/Views/Report/PendingReports.cshtml -->
+@model IEnumerable<Report>
+@{
+    ViewData["Title"] = "Báo cáo chờ duyệt";
+    Layout = "~/Areas/Manager/Views/Shared/_Layout.cshtml";
+}
+
+<div class="row">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5><i class="fas fa-clock"></i> Báo cáo chờ duyệt</h5>
+                @if (Model.Any())
+                {
+                    <div>
+                        <button type="button" class="btn btn-success" onclick="approveSelected()">
+                            <i class="fas fa-check-double"></i> Duyệt đã chọn
+                        </button>
+                        <button type="button" class="btn btn-outline-primary" onclick="selectAll()">
+                            <i class="fas fa-check-square"></i> Chọn tất cả
+                        </button>
+                    </div>
+                }
+            </div>
+            <div class="card-body">
+                @if (Model.Any())
+                {
+                    <div class="row mb-3">
+                        <div class="col-md-4">
+                            <div class="card bg-warning text-white">
+                                <div class="card-body">
+                                    <h4>@Model.Count()</h4>
+                                    <p>Báo cáo chờ duyệt</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="card bg-success text-white">
+                                <div class="card-body">
+                                    <h4>@Model.Sum(r => r.TotalRevenue).ToString("N0")</h4>
+                                    <p>Tổng doanh thu (VND)</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="card bg-info text-white">
+                                <div class="card-body">
+                                    <h4>@Model.Sum(r => r.TotalOrders)</h4>
+                                    <p>Tổng đơn hàng</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <form id="bulkApprovalForm" method="post" action="/Manager/Report/ApproveMultiple">
+                        @Html.AntiForgeryToken()
+                        <div class="table-responsive">
+                            <table class="table table-striped">
+                                <thead>
+                                    <tr>
+                                        <th>
+                                            <input type="checkbox" id="selectAllCheckbox" onchange="toggleSelectAll()">
+                                        </th>
+                                        <th>Nhân viên</th>
+                                        <th>Ngày báo cáo</th>
+                                        <th>Doanh thu</th>
+                                        <th>Đơn hàng</th>
+                                        <th>Thời gian tạo</th>
+                                        <th>Thao tác</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var report in Model)
+                                    {
+                                        <tr>
+                                            <td>
+                                                <input type="checkbox" name="reportIds" value="@report.ReportID"
+                                                    class="report-checkbox">
+                                            </td>
+                                            <td>
+                                                <div class="d-flex align-items-center">
+                                                    <i class="fas fa-user-circle fa-lg me-2 text-primary"></i>
+                                                    <div>
+                                                        <strong>@report.User.FullName</strong><br>
+                                                        <small class="text-muted">@report.User.Username</small>
+                                                    </div>
+                                                </div>
+                                            </td>
+                                            <td>@report.Date.ToString("dd/MM/yyyy")</td>
+                                            <td>
+                                                <strong class="text-success">@report.TotalRevenue.ToString("N0") VND</strong>
+                                            </td>
+                                            <td>
+                                                <span class="badge bg-info">@report.TotalOrders</span>
+                                            </td>
+                                            <td>
+                                                <small>@report.CreatedAt.ToString("dd/MM HH:mm")</small>
+                                            </td>
+                                            <td>
+                                                <div class="btn-group btn-group-sm">
+                                                    <a href="/Manager/Report/Details/@report.ReportID"
+                                                        class="btn btn-outline-primary">
+                                                        <i class="fas fa-eye"></i>
+                                                    </a>
+                                                    <button type="button" class="btn btn-outline-success"
+                                                        onclick="quickApprove('@report.ReportID')">
+                                                        <i class="fas fa-check"></i>
+                                                    </button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    </form>
+                }
+                else
+                {
+                    <div class="text-center py-5">
+                        <i class="fas fa-check-circle fa-4x text-success mb-3"></i>
+                        <h5 class="text-success">Tuyệt vời!</h5>
+                        <p class="text-muted">Hiện tại không có báo cáo nào chờ duyệt</p>
+                        <a href="/Manager/Report/Index" class="btn btn-primary">
+                            <i class="fas fa-list"></i> Xem tất cả báo cáo
+                        </a>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        function toggleSelectAll() {
+            const selectAllCheckbox = document.getElementById('selectAllCheckbox');
+            const reportCheckboxes = document.querySelectorAll('.report-checkbox');
+
+            reportCheckboxes.forEach(checkbox => {
+                checkbox.checked = selectAllCheckbox.checked;
+            });
+        }
+
+        function selectAll() {
+            document.getElementById('selectAllCheckbox').checked = true;
+            toggleSelectAll();
+        }
+
+        function approveSelected() {
+            const selectedReports = document.querySelectorAll('.report-checkbox:checked');
+
+            if (selectedReports.length === 0) {
+                alert('Vui lòng chọn ít nhất một báo cáo để duyệt!');
+                return;
+            }
+
+            if (confirm(`Bạn có chắc muốn duyệt ${selectedReports.length} báo cáo đã chọn?`)) {
+                document.getElementById('bulkApprovalForm').submit();
+            }
+        }
+
+        function quickApprove(reportId) {
+            if (confirm('Bạn có chắc muốn duyệt báo cáo này?')) {
+                $.post('/Manager/Report/Approve', {
+                    id: reportId,
+                    __RequestVerificationToken: $('input[name="__RequestVerificationToken"]').val()
+                })
+                    .done(function () {
+                        location.reload();
+                    })
+                    .fail(function () {
+                        alert('Có lỗi xảy ra khi duyệt báo cáo');
+                    });
+            }
+        }
+    </script>
+}

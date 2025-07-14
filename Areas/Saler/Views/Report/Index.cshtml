@@ -1,0 +1,123 @@
+@using POS_Shoes.Models.ViewModels
+<!-- Areas/Saler/Views/Report/Index.cshtml -->
+@model ReportListViewModel
+@{
+    ViewData["Title"] = "Danh sách báo cáo";
+    Layout = "~/Areas/Saler/Views/Shared/_Layout.cshtml";
+}
+
+<div class="row">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5><i class="fas fa-chart-line"></i> Danh sách báo cáo</h5>
+                <div>
+                    <a href="/Saler/Report/CreateDailyRevenue" class="btn btn-primary">
+                        <i class="fas fa-plus"></i> Tạo báo cáo doanh thu
+                    </a>
+                </div>
+            </div>
+            <div class="card-body">
+                <!-- Filter -->
+                <form method="get" class="row mb-3">
+                    <div class="col-md-3">
+                        <label class="form-label">Từ ngày:</label>
+                        <input type="date" asp-for="FromDate" class="form-control">
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Đến ngày:</label>
+                        <input type="date" asp-for="ToDate" class="form-control">
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Trạng thái:</label>
+                        <select asp-for="Status" class="form-select">
+                            <option value="">Tất cả</option>
+                            <option value="Generated">Đã tạo</option>
+                            <option value="Approved">Đã duyệt</option>
+                            <option value="Rejected">Bị từ chối</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">&nbsp;</label>
+                        <button type="submit" class="btn btn-secondary d-block">
+                            <i class="fas fa-filter"></i> Lọc
+                        </button>
+                    </div>
+                </form>
+
+                <!-- Reports Table -->
+                <div class="table-responsive">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>Loại báo cáo</th>
+                                <th>Ngày</th>
+                                <th>Mô tả</th>
+                                <th>Doanh thu</th>
+                                <th>Đơn hàng</th>
+                                <th>Trạng thái</th>
+                                <th>Tạo lúc</th>
+                                <th>Thao tác</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var report in Model.Reports)
+                            {
+                                <tr>
+                                    <td>
+                                        @switch (report.Type)
+                                        {
+                                            case "DAILY_REVENUE":
+                                                <span class="badge bg-primary">Doanh thu ngày</span>
+                                                break;
+                                            default:
+                                                <span class="badge bg-secondary">@report.Type</span>
+                                                break;
+                                        }
+                                    </td>
+                                    <td>@report.Date.ToString("dd/MM/yyyy")</td>
+                                    <td>@report.Description</td>
+                                    <td>@report.TotalRevenue.ToString("N0") VND</td>
+                                    <td>@report.TotalOrders</td>
+                                    <td>
+                                        @switch (report.Status)
+                                        {
+                                            case "Generated":
+                                                <span class="badge bg-success">Đã tạo</span>
+                                                break;
+                                            case "Approved":
+                                                <span class="badge bg-info">Đã duyệt</span>
+                                                break;
+                                            case "Rejected":
+                                                <span class="badge bg-danger">Bị từ chối</span>
+                                                break;
+                                            default:
+                                                <span class="badge bg-secondary">@report.Status</span>
+                                                break;
+                                        }
+                                    </td>
+                                    <td>@report.CreatedAt.ToString("dd/MM/yyyy HH:mm")</td>
+                                    <td>
+                                        <a href="/Saler/Report/ViewReport/@report.ReportID" class="btn btn-sm btn-primary">
+                                            <i class="fas fa-eye"></i> Xem
+                                        </a>
+                                        <a href="/Saler/Report/ExportPDF/@report.ReportID" class="btn btn-sm btn-success">
+                                            <i class="fas fa-file-pdf"></i> PDF
+                                        </a>
+                                        <form method="post" action="/Saler/Report/Delete/@report.ReportID" class="d-inline">
+                                            @Html.AntiForgeryToken()
+                                            <button type="submit" class="btn btn-sm btn-danger"
+                                                onclick="return confirm('Bạn có chắc muốn xóa báo cáo này?')">
+                                                <i class="fas fa-trash"></i> Xóa
+                                            </button>
+                                        </form>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

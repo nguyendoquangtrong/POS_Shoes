@@ -1,0 +1,125 @@
+@using POS_Shoes.Models.ViewModels
+@model RevenueOverviewViewModel
+@{
+    ViewData["Title"] = "Tổng quan doanh thu (đã duyệt)";
+    Layout = "~/Areas/Accountant/Views/Shared/_Layout.cshtml";
+}
+
+<h4 class="mb-4">
+    <i class="fas fa-chart-line text-success"></i>
+    Tổng quan doanh thu (Từ báo cáo đã duyệt)
+</h4>
+
+<form class="row g-2 mb-3">
+    <div class="col-md-3">
+        <label class="form-label">Từ ngày</label>
+        <input type="date" name="fromDate" class="form-control" value="@Model.FromDate:yyyy-MM-dd">
+    </div>
+    <div class="col-md-3">
+        <label class="form-label">Đến ngày</label>
+        <input type="date" name="toDate" class="form-control" value="@Model.ToDate:yyyy-MM-dd">
+    </div>
+    <div class="col-md-3 d-flex align-items-end">
+        <button class="btn btn-primary w-100">
+            <i class="fas fa-filter"></i> Lọc
+        </button>
+    </div>
+</form>
+
+<div class="row text-center mb-4">
+    <div class="col-md-4">
+        <div class="card bg-success text-white">
+            <div class="card-body">
+                <h4>@Model.TotalRevenue.ToString("N0")</h4>
+                <p class="mb-0">Tổng doanh thu (VND)</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card bg-primary text-white">
+            <div class="card-body">
+                <h4>@Model.TotalOrders</h4>
+                <p class="mb-0">Tổng đơn hàng</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card bg-info text-white">
+            <div class="card-body">
+                <h4>@Model.AverageOrderValue.ToString("N0")</h4>
+                <p class="mb-0">Giá trị đơn TB (VND)</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Revenue by staff -->
+<div class="card mb-4">
+    <div class="card-header">
+        <i class="fas fa-users"></i> Doanh thu theo nhân viên
+    </div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-striped mb-0">
+                <thead>
+                    <tr>
+                        <th>Nhân viên</th>
+                        <th>Số đơn</th>
+                        <th>Doanh thu</th>
+                        <th>Tỷ lệ</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var s in Model.StaffRevenues)
+                    {
+                        <tr>
+                            <td>@s.StaffName</td>
+                            <td>@s.OrderCount</td>
+                            <td>@s.Revenue.ToString("N0") VND</td>
+                            <td>
+                                <div class="progress">
+                                    <div class="progress-bar" style="width:@s.Percentage%">
+                                        @s.Percentage.ToString("F1")%
+                                    </div>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Daily revenue chart -->
+<div class="card">
+    <div class="card-header">
+        <i class="fas fa-chart-bar"></i> Doanh thu theo ngày
+    </div>
+    <div class="card-body">
+        <canvas id="dailyChart" height="90"></canvas>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        const dailyData = @Html.Raw(Json.Serialize(Model.DailyRevenues));
+        const ctx = document.getElementById('dailyChart').getContext('2d');
+        new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: dailyData.map(d => new Date(d.date).toLocaleDateString('vi-VN')),
+                datasets: [{
+                    label: 'Doanh thu (VND)',
+                    data: dailyData.map(d => d.revenue),
+                    borderColor: 'rgb(75,192,192)',
+                    backgroundColor: 'rgba(75,192,192,0.25)',
+                    tension: .3,
+                    fill: true
+                }]
+            },
+            options: { responsive: true, scales: { y: { beginAtZero: true } } }
+        });
+    </script>
+}

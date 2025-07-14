@@ -1,0 +1,265 @@
+<!-- Areas/Manager/Views/Product/Details.cshtml -->
+@model POS_Shoes.Models.Entities.Product
+@{
+    ViewData["Title"] = "Chi Tiết Sản Phẩm";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h1><i class="fas fa-info-circle"></i> Chi Tiết Sản Phẩm</h1>
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a asp-action="Index">Sản phẩm</a></li>
+            <li class="breadcrumb-item active">Chi tiết</li>
+        </ol>
+    </nav>
+</div>
+
+<div class="row">
+    <div class="col-md-8">
+        <div class="card mb-3">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0"><i class="fas fa-box"></i> @Model.ProductName</h5>
+                <div>
+                    @if (Model.Status == "active")
+                    {
+                        <span class="badge bg-success fs-6">Hoạt động</span>
+                    }
+                    else
+                    {
+                        <span class="badge bg-secondary fs-6">Ngừng bán</span>
+                    }
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label class="form-label text-muted">
+                                <i class="fas fa-tag"></i> Tên Sản Phẩm
+                            </label>
+                            <div class="fw-bold">@Model.ProductName</div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label class="form-label text-muted">
+                                <i class="fas fa-barcode"></i> Mã Vạch
+                            </label>
+                            <div><code>@Model.Barcode</code></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-4">
+                        <div class="mb-3">
+                            <label class="form-label text-muted">
+                                <i class="fas fa-dollar-sign"></i> Giá Bán
+                            </label>
+                            <div class="fw-bold text-success fs-4">@Model.Price.ToString("C0")</div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="mb-3">
+                            <label class="form-label text-muted">
+                                <i class="fas fa-boxes"></i> Số Lượng Tồn Kho
+                            </label>
+                            <div>
+                                @if (Model.Quantity > 10)
+                                {
+                                    <span class="badge bg-success fs-6">@Model.Quantity</span>
+                                }
+                                else if (Model.Quantity > 0)
+                                {
+                                    <span class="badge bg-warning fs-6">@Model.Quantity</span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-danger fs-6">Hết hàng</span>
+                                }
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="mb-3">
+                            <label class="form-label text-muted">
+                                <i class="fas fa-truck"></i> Nhà Cung Cấp
+                            </label>
+                            <div class="fw-bold">@Model.Supplier</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-12">
+                        <div class="mb-3">
+                            <label class="form-label text-muted">
+                                <i class="fas fa-percent"></i> Khuyến Mãi
+                            </label>
+                            <div>
+                                @if (Model.Promotion != null)
+                                {
+                                    <span class="badge bg-info fs-6">@Model.Promotion.Name</span>
+                                }
+                                else
+                                {
+                                    <span class="text-muted">Không áp dụng khuyến mãi</span>
+                                }
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                @if (Model.Quantity < 10)
+                {
+                    <div class="alert alert-warning">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        <strong>Cảnh báo:</strong> Sản phẩm sắp hết hàng. Vui lòng nhập thêm hàng!
+                    </div>
+                }
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="fas fa-ruler"></i> Danh Sách Kích Cỡ</h5>
+            </div>
+            <div class="card-body">
+                @if (Model.ProductSizes != null && Model.ProductSizes.Any())
+                {
+                    <div class="table-responsive">
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>Kích Cỡ</th>
+                                    <th>Số Lượng</th>
+                                    <th>Trạng Thái</th>
+                                    <th>Tỷ Lệ</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @{
+                                    var totalSizeQuantity = Model.ProductSizes.Sum(s => s.Quantity);
+                                }
+                                @foreach (var size in Model.ProductSizes.OrderBy(s => s.Size))
+                                {
+                                    <tr>
+                                        <td><span class="badge bg-primary">@size.Size</span></td>
+                                        <td>
+                                            @if (size.Quantity > 10)
+                                            {
+                                                <span class="badge bg-success">@size.Quantity</span>
+                                            }
+                                            else if (size.Quantity > 0)
+                                            {
+                                                <span class="badge bg-warning">@size.Quantity</span>
+                                            }
+                                            else
+                                            {
+                                                <span class="badge bg-danger">0</span>
+                                            }
+                                        </td>
+                                        <td>
+                                            @if (size.Quantity > 0)
+                                            {
+                                                <span class="text-success">Còn hàng</span>
+                                            }
+                                            else
+                                            {
+                                                <span class="text-danger">Hết hàng</span>
+                                            }
+                                        </td>
+                                        <td>
+                                            @if (totalSizeQuantity > 0)
+                                            {
+                                                var percentage = (size.Quantity * 100.0) / totalSizeQuantity;
+                                                <div class="progress" style="height: 20px;">
+                                                    <div class="progress-bar" role="progressbar" style="width: @percentage%">
+                                                        @percentage.ToString("F1")%
+                                                    </div>
+                                                </div>
+                                            }
+                                            else
+                                            {
+                                                <span class="text-muted">0%</span>
+                                            }
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                }
+                else
+                {
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle"></i> Chưa có kích cỡ nào được thêm cho sản phẩm này.
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <div class="card mb-3">
+            <div class="card-header">
+                <h6 class="mb-0"><i class="fas fa-image"></i> Hình Ảnh Sản Phẩm</h6>
+            </div>
+            <div class="card-body text-center">
+                @if (!string.IsNullOrEmpty(Model.Image))
+                {
+                    <img src="@Model.Image" class="img-fluid rounded" alt="@Model.ProductName" style="max-height: 300px;">
+                }
+                else
+                {
+                    <div class="border rounded p-4 bg-light">
+                        <i class="fas fa-image fa-3x text-muted mb-2"></i>
+                        <p class="text-muted">Chưa có hình ảnh</p>
+                    </div>
+                }
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header">
+                <h6 class="mb-0"><i class="fas fa-chart-bar"></i> Thống Kê</h6>
+            </div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <small class="text-muted">ID Sản Phẩm</small>
+                    <div class="font-monospace small">@Model.ProductID</div>
+                </div>
+                <div class="mb-3">
+                    <small class="text-muted">Tổng Số Kích Cỡ</small>
+                    <div class="fw-bold">@(Model.ProductSizes?.Count() ?? 0)</div>
+                </div>
+                <div class="mb-3">
+                    <small class="text-muted">Tổng Số Lượng Theo Kích Cỡ</small>
+                    <div class="fw-bold">@(Model.ProductSizes?.Sum(s => s.Quantity) ?? 0)</div>
+                </div>
+                <div class="mb-3">
+                    <small class="text-muted">Giá Trị Tồn Kho</small>
+                    <div class="fw-bold text-success">@((Model.Price * Model.Quantity).ToString("C0"))</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-footer d-flex justify-content-between">
+        <div>
+            <a asp-action="Index" class="btn btn-secondary">
+                <i class="fas fa-arrow-left"></i> Quay Lại Danh Sách
+            </a>
+        </div>
+        <div>
+            <a asp-action="Edit" asp-route-id="@Model.ProductID" class="btn btn-primary">
+                <i class="fas fa-edit"></i> Chỉnh Sửa
+            </a>
+            <a asp-action="Delete" asp-route-id="@Model.ProductID" class="btn btn-outline-danger">
+                <i class="fas fa-trash"></i> Xóa
+            </a>
+        </div>
+    </div>
+</div>

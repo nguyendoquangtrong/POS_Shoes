@@ -1,0 +1,193 @@
+<!-- Areas/Manager/Views/Product/Index.cshtml -->
+@model IEnumerable<POS_Shoes.Models.Entities.Product>
+@{
+    ViewData["Title"] = "Quản Lý Sản Phẩm";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h1><i class="fas fa-box"></i> Quản Lý Sản Phẩm</h1>
+    <a asp-action="Create" class="btn btn-primary">
+        <i class="fas fa-plus"></i> Thêm Sản Phẩm Mới
+    </a>
+</div>
+
+<div class="row mb-3">
+    <div class="col-md-6">
+        <div class="input-group">
+            <input type="text" class="form-control" placeholder="Tìm kiếm sản phẩm..." id="searchInput">
+            <button class="btn btn-outline-secondary" type="button">
+                <i class="fas fa-search"></i>
+            </button>
+        </div>
+    </div>
+    <div class="col-md-6 text-end">
+        <div class="btn-group" role="group">
+            <input type="radio" class="btn-check" name="statusFilter" id="all" value="all" checked>
+            <label class="btn btn-outline-secondary" for="all">Tất cả</label>
+
+            <input type="radio" class="btn-check" name="statusFilter" id="active" value="active">
+            <label class="btn btn-outline-success" for="active">Hoạt động</label>
+
+            <input type="radio" class="btn-check" name="statusFilter" id="inactive" value="inactive">
+            <label class="btn btn-outline-danger" for="inactive">Ngừng bán</label>
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-striped" id="productTable">
+                <thead>
+                    <tr>
+                        <th>Hình ảnh</th>
+                        <th>Tên sản phẩm</th>
+                        <th>Mã vạch</th>
+                        <th>Giá</th>
+                        <th>Số lượng</th>
+                        <th>Nhà cung cấp</th>
+                        <th>Trạng thái</th>
+                        <th>Khuyến mãi</th>
+                        <th>Kích cỡ</th>
+                        <th>Thao tác</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var item in Model)
+                    {
+                        <tr data-status="@item.Status?.ToLower()">
+                            <td>
+                                @if (!string.IsNullOrEmpty(item.Image))
+                                {
+                                    <img src="@item.Image" alt="@item.ProductName" class="img-thumbnail"
+                                        style="width: 50px; height: 50px; object-fit: cover;">
+                                }
+                                else
+                                {
+                                    <div class="bg-light d-flex align-items-center justify-content-center"
+                                        style="width: 50px; height: 50px;">
+                                        <i class="fas fa-image text-muted"></i>
+                                    </div>
+                                }
+                            </td>
+                            <td>
+                                <strong>@item.ProductName</strong>
+                                @if (item.Quantity < 10)
+                                {
+                                    <br>
+                            
+                                    <small class="text-danger"><i class="fas fa-exclamation-triangle"></i> Sắp hết
+                                        hàng</small>
+                                }
+                            </td>
+                            <td><code>@item.Barcode</code></td>
+                            <td><strong class="text-success">@item.Price.ToString("C0")</strong></td>
+                            <td>
+                                @if (item.Quantity < 10)
+                                {
+                                    <span class="badge bg-warning">@item.Quantity</span>
+                                }
+                                else if (item.Quantity < 5)
+                                {
+                                    <span class="badge bg-danger">@item.Quantity</span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-success">@item.Quantity</span>
+                                }
+                            </td>
+                            <td>@item.Supplier</td>
+                            <td>
+                                @if (item.Status == "active")
+                                {
+                                    <span class="badge bg-success">Hoạt động</span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-secondary">Ngừng bán</span>
+                                }
+                            </td>
+                            <td>
+                                @if (item.Promotion != null)
+                                {
+                                    <span class="badge bg-info">@item.Promotion.Name</span>
+                                }
+                                else
+                                {
+                                    <span class="text-muted">Không có</span>
+                                }
+                            </td>
+                            <td>
+                                @if (item.ProductSizes != null && item.ProductSizes.Any())
+                                {
+                                    <div class="d-flex flex-wrap gap-1">
+                                        @foreach (var size in item.ProductSizes.Take(3))
+                                        {
+                                            <span class="badge bg-outline-primary">@size.Size</span>
+                                        }
+                                        @if (item.ProductSizes.Count() > 3)
+                                        {
+                                            <span class="badge bg-light text-dark">+@(item.ProductSizes.Count() - 3)</span>
+                                        }
+                                    </div>
+                                }
+                                else
+                                {
+                                    <span class="text-muted">Chưa có</span>
+                                }
+                            </td>
+                            <td>
+                                <div class="btn-group" role="group">
+                                    <a asp-action="Details" asp-route-id="@item.ProductID"
+                                        class="btn btn-sm btn-outline-info" title="Xem chi tiết">
+                                        <i class="fas fa-eye"></i>
+                                    </a>
+                                    <a asp-action="Edit" asp-route-id="@item.ProductID"
+                                        class="btn btn-sm btn-outline-primary" title="Chỉnh sửa">
+                                        <i class="fas fa-edit"></i>
+                                    </a>
+                                    <a asp-action="Delete" asp-route-id="@item.ProductID"
+                                        class="btn btn-sm btn-outline-danger" title="Xóa">
+                                        <i class="fas fa-trash"></i>
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        // Search functionality
+        document.getElementById('searchInput').addEventListener('keyup', function () {
+            const searchTerm = this.value.toLowerCase();
+            const rows = document.querySelectorAll('#productTable tbody tr');
+
+            rows.forEach(row => {
+                const text = row.textContent.toLowerCase();
+                row.style.display = text.includes(searchTerm) ? '' : 'none';
+            });
+        });
+
+        // Status filter
+        document.querySelectorAll('input[name="statusFilter"]').forEach(radio => {
+            radio.addEventListener('change', function () {
+                const status = this.value;
+                const rows = document.querySelectorAll('#productTable tbody tr');
+
+                rows.forEach(row => {
+                    if (status === 'all') {
+                        row.style.display = '';
+                    } else {
+                        const rowStatus = row.getAttribute('data-status');
+                        row.style.display = rowStatus === status ? '' : 'none';
+                    }
+                });
+            });
+        });
+    </script>
+}

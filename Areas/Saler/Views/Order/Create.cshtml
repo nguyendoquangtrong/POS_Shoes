@@ -1,0 +1,719 @@
+@using POS_Shoes.Models.ViewModels
+
+<!-- Areas/Saler/Views/Order/Create.cshtml -->
+@model CreateOrderViewModel
+@{
+    ViewData["Title"] = "Tạo đơn hàng";
+    Layout = "~/Areas/Saler/Views/Shared/_Layout.cshtml";
+}
+
+<div class="row pos-container">
+    <!-- Left Panel - Products -->
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-boxes"></i> Sản phẩm</h5>
+                <div class="row mt-2">
+                    <div class="col-md-6">
+                        <input type="text" id="barcodeInput" class="form-control barcode-input"
+                            placeholder="Quét mã vạch hoặc nhập mã..." autofocus>
+                    </div>
+                    <div class="col-md-6">
+                        <input type="text" id="searchProduct" class="form-control" placeholder="Tìm kiếm sản phẩm...">
+                    </div>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="row" id="productList">
+                    @foreach (var product in (List<Product>)ViewBag.Products)
+                    {
+                        <div class="col-md-3 mb-3 product-item" data-name="@product.ProductName.ToLower()">
+                            <div class="card product-card"
+                                onclick="selectProduct('@product.ProductID', '@product.ProductName', '@product.Price')">
+                                <div class="card-body text-center">
+                                    @if (!string.IsNullOrEmpty(product.Image))
+                                    {
+                                        <img src="@product.Image" class="img-fluid mb-2"
+                                            style="height: 100px; object-fit: cover;">
+                                    }
+                                    else
+                                    {
+                                        <div class="bg-light p-3 mb-2" style="height: 100px;">
+                                            <i class="fas fa-image fa-3x text-muted"></i>
+                                        </div>
+                                    }
+                                    <h6 class="card-title">@product.ProductName</h6>
+                                    <p class="card-text">
+                                        <strong>@product.Price.ToString("N0") VND</strong><br>
+                                        <small class="text-muted">Còn: @product.Quantity</small>
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Right Panel - Cart -->
+    <div class="col-md-4">
+        <form id="orderForm" asp-action="Create" method="post">
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="fas fa-shopping-cart"></i> Giỏ hàng</h5>
+                </div>
+                <div class="card-body">
+                    <!-- Customer Selection -->
+                    <!-- Customer Selection - Updated with phone search -->
+                    <div class="mb-3">
+                        <label class="form-label">Khách hàng</label>
+
+                        <!-- Phone Search Input -->
+                        <div class="input-group mb-2">
+                            <input type="text" id="phoneSearchInput" class="form-control"
+                                placeholder="Nhập số điện thoại để tìm kiếm..." maxlength="15">
+                            <button type="button" class="btn btn-outline-primary" id="searchPhoneBtn">
+                                <i class="fas fa-search"></i>
+                            </button>
+                        </div>
+
+                        <!-- Customer Selection Dropdown -->
+                        <div class="input-group">
+                            <select asp-for="CustomerID" class="form-select" id="customerSelect">
+                                <option value="">Khách lẻ</option>
+                                @foreach (var customer in (List<Customer>)ViewBag.Customers)
+                                {
+                                    <option value="@customer.CustomerID">@customer.Name - @customer.Phone</option>
+                                }
+                            </select>
+                            <button type="button" class="btn btn-outline-secondary" data-bs-toggle="modal"
+                                data-bs-target="#addCustomerModal">
+                                <i class="fas fa-plus"></i>
+                            </button>
+                        </div>
+
+                        <!-- Search Result Display -->
+                        <div id="searchResult" class="mt-2" style="display: none;">
+                            <div class="alert alert-info">
+                                <i class="fas fa-user"></i>
+                                <strong id="foundCustomerName"></strong> - <span id="foundCustomerPhone"></span>
+                                <button type="button" class="btn btn-sm btn-success float-end" id="selectFoundCustomer">
+                                    Chọn khách hàng này
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Search Status -->
+                        <div id="searchStatus" class="mt-2"></div>
+                    </div>
+
+                    <!-- Cart Items -->
+                    <div id="cartItems" style="max-height: 300px; overflow-y: auto;">
+                        <!-- Cart items will be added here dynamically -->
+                    </div>
+
+                    <hr>
+
+                    <!-- Totals -->
+                    <div class="row mb-2">
+                        <div class="col-6"><strong>Tổng tiền:</strong></div>
+                        <div class="col-6 text-end">
+                            <strong id="totalAmount">0 VND</strong>
+                            <input type="hidden" asp-for="TotalAmount" id="totalAmountInput">
+                        </div>
+                    </div>
+
+                    <!-- Payment -->
+                    <div class="mb-3">
+                        <label asp-for="CustomerPaid" class="form-label">Tiền khách đưa</label>
+                        <input asp-for="CustomerPaid" class="form-control" id="customerPaidInput" type="number"
+                            step="1000">
+                        <span asp-validation-for="CustomerPaid" class="text-danger"></span>
+                    </div>
+
+                    <!-- Quick Payment Buttons -->
+                    <div class="mb-3">
+                        <small class="text-muted">Thanh toán nhanh:</small><br>
+                        <div class="btn-group btn-group-sm" role="group">
+                            <button type="button" class="btn btn-outline-primary" onclick="quickPay(0)">Đúng
+                                tiền</button>
+                            <button type="button" class="btn btn-outline-primary"
+                                onclick="quickPay(50000)">+50K</button>
+                            <button type="button" class="btn btn-outline-primary"
+                                onclick="quickPay(100000)">+100K</button>
+                        </div>
+                    </div>
+
+                    <div class="row mb-3">
+                        <div class="col-6"><strong>Tiền thừa:</strong></div>
+                        <div class="col-6 text-end">
+                            <strong id="changeAmount">0 VND</strong>
+                        </div>
+                    </div>
+
+                    <!-- Action Buttons -->
+                    <div class="d-grid gap-2">
+                        <button type="submit" class="btn btn-success btn-lg" id="submitOrder" disabled>
+                            <i class="fas fa-check"></i> Thanh toán
+                        </button>
+                        <button type="button" class="btn btn-warning" onclick="clearCart()">
+                            <i class="fas fa-trash"></i> Xóa giỏ hàng
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Add Customer Modal -->
+<div class="modal fade" id="addCustomerModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Thêm khách hàng mới</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="addCustomerForm">
+                    <div class="mb-3">
+                        <label class="form-label">Tên khách hàng</label>
+                        <input type="text" class="form-control" id="customerName" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Số điện thoại</label>
+                        <input type="tel" class="form-control" id="customerPhone" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Email</label>
+                        <input type="email" class="form-control" id="customerEmail">
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
+                <button type="button" class="btn btn-primary" onclick="addCustomer()">Thêm khách hàng</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Product Selection Modal - Thay thế Size Selection Modal cũ -->
+<div class="modal fade" id="productModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header border-0">
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row">
+                    <!-- Product Image -->
+                    <div class="col-md-6">
+                        <div class="product-image-container">
+                            <img id="modalProductImage" src="" alt="Product Image" class="img-fluid rounded">
+                        </div>
+                    </div>
+
+                    <!-- Product Details -->
+                    <div class="col-md-6">
+                        <h4 id="modalProductName" class="mb-3"></h4>
+
+                        <!-- Brand -->
+                        <div class="mb-3">
+                            <label class="form-label">Brand:</label>
+                            <span id="modalProductBrand" class="ms-2"></span>
+                        </div>
+
+                        <!-- Size Selection -->
+                        <div class="mb-3">
+                            <label class="form-label">Size:</label>
+                            <select id="modalSizeSelect" class="form-select">
+                                <!-- Options will be populated by JavaScript -->
+                            </select>
+                        </div>
+
+                        <!-- Stock -->
+                        <div class="mb-3">
+                            <label class="form-label">Stock:</label>
+                            <span id="modalStock" class="ms-2 fw-bold"></span>
+                        </div>
+
+                        <!-- Price -->
+                        <div class="mb-3">
+                            <label class="form-label">Price:</label>
+                            <span id="modalPrice" class="ms-2 fw-bold fs-5 text-success"></span>
+                        </div>
+
+                        <!-- Quantity -->
+                        <div class="mb-4">
+                            <label class="form-label">Quantity:</label>
+                            <div class="input-group" style="width: 150px;">
+                                <button type="button" class="btn btn-outline-secondary"
+                                    onclick="changeQuantity(-1)">-</button>
+                                <input type="number" id="modalQuantityInput" class="form-control text-center" value="1"
+                                    min="1">
+                                <button type="button" class="btn btn-outline-secondary"
+                                    onclick="changeQuantity(1)">+</button>
+                            </div>
+                        </div>
+
+                        <!-- Note -->
+                        <div class="mb-4">
+                            <label class="form-label">Note:</label>
+                            <textarea id="modalNote" class="form-control" rows="3"
+                                placeholder="enter note..."></textarea>
+                        </div>
+
+                        <!-- Action Buttons -->
+                        <div class="d-flex gap-2">
+                            <button type="button" class="btn btn-secondary flex-fill"
+                                data-bs-dismiss="modal">CANCEL</button>
+                            <button type="button" class="btn btn-primary flex-fill"
+                                onclick="addToCartFromModal()">ADD</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        let cart = [];
+        let selectedProduct = null;
+        let productSizes = [];
+        let currentSelectedSize = null;
+
+        let searchTimeout;
+        let foundCustomer = null;
+
+
+        $('#phoneSearchInput').on('input', function () {
+            const phone = $(this).val().trim();
+
+            // Clear previous timeout
+            clearTimeout(searchTimeout);
+
+            // Clear previous results
+            $('#searchResult').hide();
+            $('#searchStatus').html('');
+
+            if (phone.length >= 3) {
+                // Show loading status
+                $('#searchStatus').html('<i class="fas fa-spinner fa-spin"></i> Đang tìm kiếm...').addClass('search-loading');
+
+                // Debounce search
+                searchTimeout = setTimeout(function () {
+                    searchCustomerByPhone(phone);
+                }, 500);
+            }
+        });
+
+        // Search button click handler
+        $('#searchPhoneBtn').click(function () {
+            const phone = $('#phoneSearchInput').val().trim();
+            if (phone) {
+                searchCustomerByPhone(phone);
+            } else {
+                alert('Vui lòng nhập số điện thoại!');
+            }
+        });
+
+        // Enter key handler for phone search
+        $('#phoneSearchInput').on('keypress', function (e) {
+            if (e.which === 13) {
+                e.preventDefault();
+                $('#searchPhoneBtn').click();
+            }
+        });
+
+        // Search customer by phone function
+        function searchCustomerByPhone(phone) {
+            $('#searchStatus').html('<i class="fas fa-spinner fa-spin"></i> Đang tìm kiếm...').removeClass().addClass('search-loading');
+
+            $.get('/Saler/Customer/SearchByPhone', { phone: phone })
+                .done(function (response) {
+                    if (response.success) {
+                        foundCustomer = response.customer;
+
+                        // Display found customer
+                        $('#foundCustomerName').text(response.customer.name);
+                        $('#foundCustomerPhone').text(response.customer.phone);
+                        $('#searchResult').show();
+
+                        // Update status
+                        $('#searchStatus').html('<i class="fas fa-check"></i> Tìm thấy khách hàng!').removeClass().addClass('search-success');
+
+                        // Highlight input
+                        $('#phoneSearchInput').addClass('phone-input-highlight');
+
+                        // Auto-select customer after 1 second
+                        setTimeout(function () {
+                            if (foundCustomer) {
+                                selectFoundCustomerAuto();
+                            }
+                        }, 1000);
+                    } else {
+                        foundCustomer = null;
+                        $('#searchResult').hide();
+                        $('#searchStatus').html('<i class="fas fa-times"></i> ' + response.message).removeClass().addClass('search-error');
+                        $('#phoneSearchInput').removeClass('phone-input-highlight');
+                    }
+                })
+                .fail(function () {
+                    foundCustomer = null;
+                    $('#searchResult').hide();
+                    $('#searchStatus').html('<i class="fas fa-times"></i> Có lỗi xảy ra khi tìm kiếm').removeClass().addClass('search-error');
+                    $('#phoneSearchInput').removeClass('phone-input-highlight');
+                });
+        }
+
+        // Select found customer button handler
+        $('#selectFoundCustomer').click(function () {
+            selectFoundCustomerAuto();
+        });
+
+        // Auto-select found customer
+        function selectFoundCustomerAuto() {
+            if (foundCustomer) {
+                // Set customer in dropdown
+                $('#customerSelect').val(foundCustomer.id);
+
+                // Clear search
+                $('#phoneSearchInput').val('').removeClass('phone-input-highlight');
+                $('#searchResult').hide();
+                $('#searchStatus').html('<i class="fas fa-check"></i> Đã chọn khách hàng: ' + foundCustomer.name).removeClass().addClass('search-success');
+
+                // Clear status after 3 seconds
+                setTimeout(function () {
+                    $('#searchStatus').html('');
+                }, 3000);
+
+                foundCustomer = null;
+            }
+        }
+
+        // Clear search when customer dropdown changes
+        $('#customerSelect').on('change', function () {
+            if ($(this).val() === '') {
+                $('#phoneSearchInput').val('').removeClass('phone-input-highlight');
+                $('#searchResult').hide();
+                $('#searchStatus').html('');
+                foundCustomer = null;
+            }
+        });
+
+        // Products data from server (using safe DTO)
+        const productsData = @Html.Raw(Json.Serialize(ViewBag.ProductsForJs));
+
+        // Search products
+        $('#searchProduct').on('input', function () {
+            const searchTerm = $(this).val().toLowerCase();
+            $('.product-item').each(function () {
+                const productName = $(this).data('name');
+                if (productName.includes(searchTerm)) {
+                    $(this).show();
+                } else {
+                    $(this).hide();
+                }
+            });
+        });
+
+        // Barcode input
+        $('#barcodeInput').on('keypress', function (e) {
+            if (e.which === 13) { // Enter key
+                const barcode = $(this).val();
+                if (barcode) {
+                    searchByBarcode(barcode);
+                    $(this).val('');
+                }
+            }
+        });
+
+        // Search product by barcode
+        function searchByBarcode(barcode) {
+            $.get('/Saler/Order/GetProductByBarcode', { barcode: barcode })
+                .done(function (data) {
+                    selectProduct(data.productID, data.productName, data.price, data.sizes);
+                })
+                .fail(function () {
+                    alert('Không tìm thấy sản phẩm với mã vạch này!');
+                });
+        }
+
+        // Select product - Updated to show new modal
+        function selectProduct(productId, productName, price, sizes = null) {
+            selectedProduct = {
+                id: productId,
+                name: productName,
+                price: parseFloat(price)
+            };
+
+            if (sizes) {
+                productSizes = sizes;
+            } else {
+                // Get product from data
+                const product = productsData.find(p => p.productID === productId);
+                if (product) {
+                    productSizes = product.productSizes;
+                    selectedProduct.image = product.image;
+                    selectedProduct.barcode = product.barcode;
+                } else {
+                    productSizes = [];
+                }
+            }
+
+            if (productSizes.length > 0) {
+                showProductModal();
+            } else {
+                alert('Sản phẩm này hiện đang hết hàng!');
+            }
+        }
+
+        // Show product modal - New function
+        function showProductModal() {
+            if (!selectedProduct) return;
+
+            // Set product image
+            if (selectedProduct.image) {
+                $('#modalProductImage').attr('src', selectedProduct.image);
+            } else {
+                $('#modalProductImage').attr('src', '/images/no-image.png'); // Default image
+            }
+
+            // Set product name
+            $('#modalProductName').text(selectedProduct.name);
+
+            // Set brand (assuming it's Nike for now, you can add this to your product data)
+            $('#modalProductBrand').text('Nike');
+
+            // Set price
+            $('#modalPrice').text(selectedProduct.price.toLocaleString() + ' VND');
+
+            // Populate size dropdown
+            let sizeOptionsHtml = '';
+            productSizes.forEach(function (size, index) {
+                if (size.quantity > 0) {
+                    sizeOptionsHtml += `<option value="${size.size}" data-quantity="${size.quantity}">${size.size}</option>`;
+                }
+            });
+            $('#modalSizeSelect').html(sizeOptionsHtml);
+
+            // Set initial stock for first size
+            if (productSizes.length > 0) {
+                const firstSize = productSizes.find(s => s.quantity > 0);
+                if (firstSize) {
+                    $('#modalStock').text(firstSize.quantity);
+                    currentSelectedSize = firstSize.size;
+                }
+            }
+
+            // Reset quantity and note
+            $('#modalQuantityInput').val(1);
+            $('#modalNote').val('');
+
+            // Show modal
+            $('#productModal').modal('show');
+        }
+
+        // Handle size selection change
+        $('#modalSizeSelect').on('change', function () {
+            const selectedSize = $(this).val();
+            const sizeData = productSizes.find(s => s.size === selectedSize);
+            if (sizeData) {
+                $('#modalStock').text(sizeData.quantity);
+                currentSelectedSize = selectedSize;
+
+                // Reset quantity if it exceeds stock
+                const currentQuantity = parseInt($('#modalQuantityInput').val());
+                if (currentQuantity > sizeData.quantity) {
+                    $('#modalQuantityInput').val(sizeData.quantity);
+                }
+            }
+        });
+
+        // Change quantity function
+        function changeQuantity(change) {
+            const currentQuantity = parseInt($('#modalQuantityInput').val()) || 1;
+            const newQuantity = currentQuantity + change;
+
+            // Get current stock
+            const currentStock = parseInt($('#modalStock').text());
+
+            if (newQuantity >= 1 && newQuantity <= currentStock) {
+                $('#modalQuantityInput').val(newQuantity);
+            }
+        }
+
+        // Add to cart from modal
+        function addToCartFromModal() {
+            if (!selectedProduct || !currentSelectedSize) return;
+
+            const quantity = parseInt($('#modalQuantityInput').val()) || 1;
+            const note = $('#modalNote').val();
+
+            // Check if product with same size already exists in cart
+            const existingItemIndex = cart.findIndex(item =>
+                item.productId === selectedProduct.id && item.size === currentSelectedSize);
+
+            if (existingItemIndex >= 0) {
+                cart[existingItemIndex].quantity += quantity;
+                if (note) {
+                    cart[existingItemIndex].note = note;
+                }
+            } else {
+                cart.push({
+                    productId: selectedProduct.id,
+                    productName: selectedProduct.name,
+                    size: currentSelectedSize,
+                    unitPrice: selectedProduct.price,
+                    quantity: quantity,
+                    note: note
+                });
+            }
+
+            updateCartDisplay();
+            $('#productModal').modal('hide');
+            selectedProduct = null;
+            currentSelectedSize = null;
+        }
+
+        // Update cart display - Modified to show note
+        function updateCartDisplay() {
+            let cartHtml = '';
+            let total = 0;
+
+            cart.forEach(function (item, index) {
+                const subtotal = item.unitPrice * item.quantity;
+                total += subtotal;
+
+                cartHtml += `
+                                                <div class="cart-item">
+                                                    <div class="d-flex justify-content-between align-items-start">
+                                                        <div>
+                                                            <h6 class="mb-1">${item.productName}</h6>
+                                                            <small class="text-muted">Size: ${item.size}</small><br>
+                                                            ${item.note ? `<small class="text-info">Note: ${item.note}</small><br>` : ''}
+                                                            <small>${item.unitPrice.toLocaleString()} × ${item.quantity} = ${subtotal.toLocaleString()} VND</small>
+                                                        </div>
+                                                        <div>
+                                                            <button type="button" class="btn btn-sm btn-outline-secondary" 
+                                                                    onclick="updateQuantity(${index}, -1)">-</button>
+                                                            <span class="mx-2">${item.quantity}</span>
+                                                            <button type="button" class="btn btn-sm btn-outline-secondary" 
+                                                                    onclick="updateQuantity(${index}, 1)">+</button>
+                                                            <button type="button" class="btn btn-sm btn-outline-danger ms-2" 
+                                                                    onclick="removeFromCart(${index})">
+                                                                <i class="fas fa-trash"></i>
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                    <input type="hidden" name="OrderItems[${index}].ProductID" value="${item.productId}">
+                                                    <input type="hidden" name="OrderItems[${index}].ProductName" value="${item.productName}">
+                                                    <input type="hidden" name="OrderItems[${index}].Size" value="${item.size}">
+                                                    <input type="hidden" name="OrderItems[${index}].UnitPrice" value="${item.unitPrice}">
+                                                    <input type="hidden" name="OrderItems[${index}].Quantity" value="${item.quantity}">
+                                                </div>
+                                            `;
+            });
+
+            $('#cartItems').html(cartHtml);
+            $('#totalAmount').text(total.toLocaleString() + ' VND');
+            $('#totalAmountInput').val(total);
+
+            $('#submitOrder').prop('disabled', cart.length === 0);
+            calculateChange();
+        }
+
+        // Update quantity
+        function updateQuantity(index, change) {
+            cart[index].quantity += change;
+            if (cart[index].quantity <= 0) {
+                cart.splice(index, 1);
+            }
+            updateCartDisplay();
+        }
+
+        // Remove from cart
+        function removeFromCart(index) {
+            cart.splice(index, 1);
+            updateCartDisplay();
+        }
+
+        // Clear cart
+        function clearCart() {
+            cart = [];
+            updateCartDisplay();
+        }
+
+        // Calculate change
+        function calculateChange() {
+            const customerPaid = parseFloat($('#customerPaidInput').val()) || 0;
+            const total = parseFloat($('#totalAmountInput').val()) || 0;
+            const change = customerPaid - total;
+            $('#changeAmount').text(change.toLocaleString() + ' VND');
+        }
+
+        $('#customerPaidInput').on('input', calculateChange);
+
+        // Quick payment
+        function quickPay(extra) {
+            const total = parseFloat($('#totalAmountInput').val()) || 0;
+            $('#customerPaidInput').val(total + extra);
+            calculateChange();
+        }
+
+        // Add new customer
+        function addCustomer() {
+            const name = $('#customerName').val();
+            const phone = $('#customerPhone').val();
+            const email = $('#customerEmail').val();
+
+            if (!name || !phone) {
+                alert('Vui lòng nhập tên và số điện thoại!');
+                return;
+            }
+
+            $.post('/Saler/Customer/Create', {
+                Name: name,
+                Phone: phone,
+                Email: email,
+                __RequestVerificationToken: $('input[name="__RequestVerificationToken"]').val()
+            })
+                .done(function (response) {
+                    // Add new customer to select dropdown
+                    const newOption = `<option value="${response.customerID}">${name} - ${phone}</option>`;
+                    $('#customerSelect').append(newOption);
+                    $('#customerSelect').val(response.customerID);
+
+                    // Clear form and close modal
+                    $('#addCustomerForm')[0].reset();
+                    $('#addCustomerModal').modal('hide');
+
+                    // Update search input with new customer phone
+                    $('#phoneSearchInput').val(phone);
+                    $('#searchStatus').html('<i class="fas fa-check"></i> Khách hàng mới đã được thêm và chọn!').removeClass().addClass('search-success');
+
+                    // Clear status after 3 seconds
+                    setTimeout(function () {
+                        $('#searchStatus').html('');
+                    }, 3000);
+                })
+                .fail(function () {
+                    alert('Có lỗi xảy ra khi thêm khách hàng!');
+                });
+        }
+        // Initialize
+        $(document).ready(function () {
+            // Focus on barcode input when page loads
+            $('#barcodeInput').focus();
+
+            // Auto-focus barcode input after any modal closes
+            $('.modal').on('hidden.bs.modal', function () {
+                $('#barcodeInput').focus();
+            });
+        });
+    </script>
+}

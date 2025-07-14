@@ -1,0 +1,288 @@
+@using POS_Shoes.Models.ViewModels
+@model MonthlyRevenueReportViewModel
+@{
+    var reportMeta = ViewBag.Report as Report;
+    ViewData["Title"] = "Báo cáo tháng";
+}
+
+<!-- Wrapper cho nội dung báo cáo để in -->
+<div id="reportContent">
+    <div class="text-center mb-4">
+        <h4 class="mb-2">
+            <i class="fas fa-file-alt"></i>
+            Báo cáo doanh thu tháng @Model.Month/@Model.Year
+        </h4>
+        <p class="text-muted">Tạo bởi: @reportMeta.User?.FullName lúc @reportMeta.CreatedAt.ToString("dd/MM/yyyy HH:mm")
+        </p>
+
+        <!-- Header cho in ấn -->
+        <div class="print-header" style="display: none;">
+            <h2>CÔNG TY GIÀY DÉP POS SHOES</h2>
+            <p>Địa chỉ: 123 Đường ABC, Quận XYZ, TP.HCM</p>
+            <p>Điện thoại: 0123.456.789 | Email: info@posshoes.com</p>
+            <hr>
+        </div>
+    </div>
+
+    <div class="row text-center mb-4">
+        <div class="col-md-4">
+            <div class="card bg-success text-white">
+                <div class="card-body">
+                    <h4>@Model.TotalRevenue.ToString("N0")</h4>
+                    <p>Tổng doanh thu (VND)</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card bg-primary text-white">
+                <div class="card-body">
+                    <h4>@Model.TotalOrders</h4>
+                    <p>Tổng đơn hàng</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card bg-info text-white">
+                <div class="card-body">
+                    <h4>@Model.AverageOrderValue.ToString("N0")</h4>
+                    <p>Giá trị đơn TB</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Staff revenue -->
+    <div class="card mb-4">
+        <div class="card-header"><i class="fas fa-users"></i> Doanh thu theo nhân viên</div>
+        <div class="card-body p-0">
+            <table class="table table-striped mb-0">
+                <thead>
+                    <tr>
+                        <th>Nhân viên</th>
+                        <th>Đơn</th>
+                        <th>Doanh thu</th>
+                        <th>Tỷ lệ</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var s in Model.StaffRevenues)
+                    {
+                        <tr>
+                            <td>@s.StaffName</td>
+                            <td>@s.OrderCount</td>
+                            <td>@s.Revenue.ToString("N0") VND</td>
+                            <td>@s.Percentage.ToString("F1")%</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Daily revenue -->
+    <div class="card mb-4">
+        <div class="card-header"><i class="fas fa-calendar-day"></i> Doanh thu theo ngày</div>
+        <div class="card-body p-0">
+            <table class="table table-striped mb-0">
+                <thead>
+                    <tr>
+                        <th>Ngày</th>
+                        <th>Đơn</th>
+                        <th>Doanh thu</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var d in Model.DailyRevenues)
+                    {
+                        <tr>
+                            <td>@d.Date.ToString("dd/MM")</td>
+                            <td>@d.OrderCount</td>
+                            <td>@d.Revenue.ToString("N0") VND</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Chữ ký cho bản in -->
+    <div class="print-signature" style="display: none;">
+        <div class="row mt-5">
+            <div class="col-6 text-center">
+                <p><strong>Người lập báo cáo</strong></p>
+                <br><br><br>
+                <p>@reportMeta.User?.FullName</p>
+            </div>
+            <div class="col-6 text-center">
+                <p><strong>Kế toán trưởng</strong></p>
+                <br><br><br>
+                <p>________________________</p>
+            </div>
+        </div>
+        <div class="text-center mt-3">
+            <small>Ngày in: @DateTime.Now.ToString("dd/MM/yyyy HH:mm")</small>
+        </div>
+    </div>
+</div>
+
+<!-- Các nút thao tác - sẽ bị ẩn khi in -->
+<div class="row mt-4 no-print">
+    <div class="col-md-12 text-center">
+        <button onclick="printReport()" class="btn btn-primary">
+            <i class="fas fa-print"></i> In báo cáo
+        </button>
+        <a href="/Accountant/Revenue/ExportPDF/@reportMeta.ReportID" class="btn btn-success">
+            <i class="fas fa-file-pdf"></i> Xuất PDF
+        </a>
+        <a asp-action="Reports" class="btn btn-secondary">
+            <i class="fas fa-arrow-left"></i> Quay lại
+        </a>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        function printReport() {
+            // Hiển thị các element chỉ dành cho in
+            document.querySelectorAll('.print-header, .print-signature').forEach(el => {
+                el.style.display = 'block';
+            });
+
+            // Tạo window mới để in
+            const printWindow = window.open('', '_blank', 'width=800,height=600');
+            const reportContent = document.getElementById('reportContent').innerHTML;
+
+            // Tạo nội dung HTML cho trang in
+            const printDocument = `
+                    <!DOCTYPE html>
+                    <html>
+                    <head>
+                        <title>Báo cáo doanh thu tháng @Model.Month/@Model.Year</title>
+                        <meta charset="utf-8">
+                        <style>
+                            body {
+                                font-family: Arial, sans-serif;
+                                margin: 20px;
+                                color: #333;
+                            }
+                            .text-center { text-align: center; }
+                            .text-muted { color: #6c757d; }
+                            .mb-4 { margin-bottom: 1.5rem; }
+                            .mt-4 { margin-top: 1.5rem; }
+                            .mt-5 { margin-top: 3rem; }
+                            .row { display: flex; flex-wrap: wrap; margin: 0 -15px; }
+                            .col-md-4, .col-6 { flex: 0 0 33.333333%; padding: 0 15px; }
+                            .col-6 { flex: 0 0 50%; }
+                            .card {
+                                border: 1px solid #dee2e6;
+                                border-radius: 0.375rem;
+                                margin-bottom: 1rem;
+                            }
+                            .card-header {
+                                background-color: #f8f9fa;
+                                padding: 0.75rem 1.25rem;
+                                border-bottom: 1px solid #dee2e6;
+                                font-weight: bold;
+                            }
+                            .card-body {
+                                padding: 1.25rem;
+                            }
+                            .bg-success { background-color: #28a745 !important; color: white; }
+                            .bg-primary { background-color: #007bff !important; color: white; }
+                            .bg-info { background-color: #17a2b8 !important; color: white; }
+                            .text-white { color: white !important; }
+                            table {
+                                width: 100%;
+                                border-collapse: collapse;
+                                margin-bottom: 1rem;
+                            }
+                            th, td {
+                                padding: 0.75rem;
+                                border: 1px solid #dee2e6;
+                                text-align: left;
+                            }
+                            th {
+                                background-color: #f8f9fa;
+                                font-weight: bold;
+                            }
+                            .table-striped tbody tr:nth-of-type(odd) {
+                                background-color: #f9f9f9;
+                            }
+                            h2, h4 {
+                                color: #333;
+                                margin-bottom: 0.5rem;
+                            }
+                            hr {
+                                border: none;
+                                border-top: 2px solid #333;
+                                margin: 1rem 0;
+                            }
+                            .fas {
+                                display: none; /* Ẩn icons khi in */
+                            }
+                            @@media print {
+                                body { margin: 0; }
+                                .no-print { display: none !important; }
+                            }
+                        </style>
+                    </head>
+                    <body>
+                        ${reportContent}
+                    </body>
+                    </html>
+                `;
+
+            // Ghi nội dung vào window mới và in
+            printWindow.document.write(printDocument);
+            printWindow.document.close();
+
+            // Đợi load xong rồi mới in
+            printWindow.onload = function () {
+                printWindow.focus();
+                printWindow.print();
+
+                // Đóng window sau khi in (tùy chọn)
+                setTimeout(() => {
+                    printWindow.close();
+                }, 100);
+            };
+
+            // Ẩn lại các element chỉ dành cho in
+            setTimeout(() => {
+                document.querySelectorAll('.print-header, .print-signature').forEach(el => {
+                    el.style.display = 'none';
+                });
+            }, 500);
+        }
+    </script>
+}
+
+<style>
+    /* CSS cho in ấn */
+    @@media print {
+        .no-print {
+            display: none !important;
+        }
+
+        .print-header,
+        .print-signature {
+            display: block !important;
+        }
+
+        body {
+            margin: 0;
+            color: #000;
+        }
+
+        .card {
+            break-inside: avoid;
+            page-break-inside: avoid;
+        }
+    }
+
+    /* Ẩn các element chỉ hiển thị khi in */
+    .print-header,
+    .print-signature {
+        display: none;
+    }
+</style>

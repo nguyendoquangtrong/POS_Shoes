@@ -1,0 +1,59 @@
+@using POS_Shoes.Models.Entities
+@model IEnumerable<Promotion>
+@{
+    ViewData["Title"] = "Promotion";
+    Layout = "~/Areas/Marketing/Views/Shared/_Layout.cshtml";
+}
+
+<h2 class="mb-3"><i class="fas fa-tags"></i> Promotions</h2>
+
+<a asp-action="Create" class="btn btn-primary mb-3"><i class="fas fa-plus"></i> Tạo Promotion</a>
+
+<table class="table table-bordered">
+    <thead>
+        <tr>
+            <th>Tên</th>
+            <th>Giảm</th>
+            <th>Thời gian</th>
+            <th>Trạng thái</th>
+            <th></th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var p in Model)
+        {
+            <tr>
+                <td>@p.Name</td>
+                <td>@p.discount %</td>
+                <td>@p.StartDate:dd/MM - @p.EndDate:dd/MM</td>
+                <td>
+                    @switch (p.Status)
+                    {
+                        case "Pending":
+                            <span class="badge bg-warning">Chờ duyệt</span>
+                            ; break;
+                        case "Approved":
+
+                            <span class="badge bg-success">Đã duyệt</span>
+                            ; break;
+                        case "Rejected":
+
+                            <span class="badge bg-danger">Từ chối</span>
+                            ; break;
+                    }
+                </td>
+                <td>
+                    @if (p.Status == "Pending")
+                    {
+                        <form asp-action="Delete" asp-route-id="@p.PromotionID" method="post" class="d-inline">
+                            @Html.AntiForgeryToken()
+                            <button class="btn btn-sm btn-danger" onclick="return confirm('Xoá promotion?')">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </form>
+                    }
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>

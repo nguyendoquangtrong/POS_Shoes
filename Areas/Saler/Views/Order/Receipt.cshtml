@@ -1,0 +1,113 @@
+<!-- Areas/Saler/Views/Order/Receipt.cshtml -->
+@model Order
+@{
+    ViewData["Title"] = "Hóa đơn";
+    Layout = "~/Areas/Saler/Views/Shared/_Layout.cshtml";
+}
+
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-body" id="receiptContent">
+                <div class="text-center mb-4">
+                    <h2>SHOES STORE</h2>
+                    <p class="mb-0">Địa chỉ: 123 Đường ABC, Quận XYZ, TP.HCM</p>
+                    <p class="mb-0">Điện thoại: 0123.456.789</p>
+                    <hr>
+                    <h4>HÓA ĐƠN BÁN HÀNG</h4>
+                </div>
+
+                <div class="row mb-3">
+                    <div class="col-6">
+                        <strong>Số hóa đơn:</strong> #@Model.OrderID.ToString().Substring(0, 8)
+                    </div>
+                    <div class="col-6 text-end">
+                        <strong>Ngày:</strong> @Model.OrderDate.ToString("dd/MM/yyyy HH:mm")
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <strong>Khách hàng:</strong>
+                    @if (Model.Customer != null)
+                    {
+                        <span>@Model.Customer.Name - @Model.Customer.Phone</span>
+                    }
+                    else
+                    {
+                        <span>Khách lẻ</span>
+                    }
+                </div>
+
+                <div class="mb-3">
+                    <strong>Nhân viên:</strong> @Model.User?.Username
+                </div>
+
+                <table class="table table-bordered">
+                    <thead>
+                        <tr>
+                            <th>STT</th>
+                            <th>Sản phẩm</th>
+                            <th>SL</th>
+                            <th>Đơn giá</th>
+                            <th>Thành tiền</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @{
+                            int index = 1;
+                        }
+                        @foreach (var detail in Model.OrderDetails)
+                        {
+                            <tr>
+                                <td>@index</td>
+                                <td>@detail.Product.ProductName</td>
+                                <td>@detail.Quantity</td>
+                                <td>@detail.UnitPrice.ToString("N0")</td>
+                                <td>@((detail.UnitPrice * detail.Quantity).ToString("N0"))</td>
+                            </tr>
+                            index++;
+                        }
+                    </tbody>
+                    <tfoot>
+                        <tr>
+                            <th colspan="4">TỔNG CỘNG:</th>
+                            <th>@Model.TotalPrice.ToString("N0") VND</th>
+                        </tr>
+                    </tfoot>
+                </table>
+
+                <div class="text-center mt-4">
+                    <p>Cảm ơn quý khách và hẹn gặp lại!</p>
+                </div>
+            </div>
+
+            <div class="card-footer text-center">
+                <button onclick="printReceipt()" class="btn btn-primary">
+                    <i class="fas fa-print"></i> In hóa đơn
+                </button>
+                <a href="/Saler/Order/Create" class="btn btn-success">
+                    <i class="fas fa-plus"></i> Tạo đơn mới
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        function printReceipt() {
+            const printContent = document.getElementById('receiptContent').innerHTML;
+            const originalContent = document.body.innerHTML;
+
+            document.body.innerHTML = `
+                    <div style="padding: 20px; font-family: Arial, sans-serif;">
+                        ${printContent}
+                    </div>
+                `;
+
+            window.print();
+            document.body.innerHTML = originalContent;
+            location.reload();
+        }
+    </script>
+}

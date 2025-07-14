@@ -1,0 +1,67 @@
+@using POS_Shoes.Models.ViewModels
+<!-- Areas/Saler/Views/Report/CreateDailyRevenue.cshtml -->
+@model DailyRevenueReportViewModel
+@{
+    ViewData["Title"] = "Tạo báo cáo doanh thu";
+    Layout = "~/Areas/Saler/Views/Shared/_Layout.cshtml";
+}
+
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-chart-line"></i> Tạo báo cáo doanh thu ngày</h5>
+            </div>
+            <div class="card-body">
+                <form asp-action="CreateDailyRevenue" method="post">
+                    <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label asp-for="ReportDate" class="form-label"></label>
+                                <input asp-for="ReportDate" class="form-control" type="date" />
+                                <span asp-validation-for="ReportDate" class="text-danger"></span>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">Thời gian tạo:</label>
+                                <input type="text" class="form-control"
+                                    value="@DateTime.Now.ToString("dd/MM/yyyy HH:mm")" readonly>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label asp-for="Description" class="form-label"></label>
+                        <textarea asp-for="Description" class="form-control" rows="3"
+                            placeholder="Nhập mô tả cho báo cáo..."></textarea>
+                        <span asp-validation-for="Description" class="text-danger"></span>
+                    </div>
+
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle"></i>
+                        <strong>Lưu ý:</strong> Báo cáo sẽ được tạo dựa trên tất cả đơn hàng đã hoàn thành trong ngày đã
+                        chọn.
+                    </div>
+
+                    <div class="d-grid gap-2">
+                        <button type="submit" class="btn btn-primary btn-lg">
+                            <i class="fas fa-chart-line"></i> Tạo báo cáo
+                        </button>
+                        <a href="/Saler/Report/Index" class="btn btn-secondary">
+                            <i class="fas fa-arrow-left"></i> Quay lại
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+}

@@ -1,0 +1,49 @@
+<!-- Areas/Saler/Views/Customer/Index.cshtml -->
+@model IEnumerable<Customer>
+@{
+    ViewData["Title"] = "Danh sách khách hàng";
+    Layout = "~/Areas/Saler/Views/Shared/_Layout.cshtml";
+}
+
+<div class="row">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5><i class="fas fa-users"></i> Danh sách khách hàng</h5>
+                <a href="/Saler/Customer/Create" class="btn btn-primary">
+                    <i class="fas fa-plus"></i> Thêm khách hàng
+                </a>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>Tên khách hàng</th>
+                                <th>Số điện thoại</th>
+                                <th>Email</th>
+                                <th>Thao tác</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var customer in Model)
+                            {
+                                <tr>
+                                    <td>@customer.Name</td>
+                                    <td>@customer.Phone</td>
+                                    <td>@customer.Email</td>
+                                    <td>
+                                        <a href="/Saler/Order/Create?customerId=@customer.CustomerID"
+                                            class="btn btn-sm btn-primary">
+                                            <i class="fas fa-shopping-cart"></i> Bán hàng
+                                        </a>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

@@ -1,0 +1,117 @@
+<!-- Views/Account/Login.cshtml -->
+@model POS_Shoes.Models.ViewModels.LoginViewModel
+@{
+    ViewData["Title"] = "Đăng nhập";
+    Layout = "~/Views/Shared/_LoginLayout.cshtml";
+}
+
+<div class="container-fluid vh-100">
+    <div class="row h-100 justify-content-center align-items-center">
+        <div class="col-12 col-sm-8 col-md-6 col-lg-4">
+            <div class="card shadow-lg border-0">
+                <!-- Header -->
+                <div class="card-header bg-primary text-white text-center py-4">
+                    <h2 class="mb-2 fw-bold">
+                        <i class="fas fa-store me-2"></i>POS Shoes
+                    </h2>
+                    <p class="mb-0 opacity-75">Đăng nhập vào hệ thống</p>
+                </div>
+
+                <!-- Body -->
+                <div class="card-body p-4">
+                    <form asp-action="Login" method="post">
+                        <div asp-validation-summary="All" class="alert alert-danger d-none"></div>
+
+                        <!-- Username -->
+                        <div class="mb-3">
+                            <label asp-for="Username" class="form-label fw-semibold">
+                                <i class="fas fa-user me-1"></i>@Html.DisplayNameFor(m => m.Username)
+                            </label>
+                            <input asp-for="Username" class="form-control form-control-lg"
+                                placeholder="Nhập tên đăng nhập" autocomplete="username" />
+                            <span asp-validation-for="Username" class="text-danger small"></span>
+                        </div>
+
+                        <!-- Password -->
+                        <div class="mb-3">
+                            <label asp-for="Password" class="form-label fw-semibold">
+                                <i class="fas fa-lock me-1"></i>@Html.DisplayNameFor(m => m.Password)
+                            </label>
+                            <div class="input-group">
+                                <input asp-for="Password" class="form-control form-control-lg"
+                                    placeholder="Nhập mật khẩu" autocomplete="current-password" />
+                                <button class="btn btn-outline-secondary" type="button" id="togglePassword">
+                                    <i class="fas fa-eye" id="eyeIcon"></i>
+                                </button>
+                            </div>
+                            <span asp-validation-for="Password" class="text-danger small"></span>
+                        </div>
+
+                        <!-- Remember Me -->
+                        <div class="mb-4">
+                            <div class="form-check">
+                                <input asp-for="RememberMe" class="form-check-input" />
+                                <label asp-for="RememberMe" class="form-check-label">
+                                    @Html.DisplayNameFor(m => m.RememberMe)
+                                </label>
+                            </div>
+                        </div>
+
+                        <input type="hidden" asp-for="ReturnUrl" />
+
+                        <!-- Submit Button -->
+                        <div class="d-grid">
+                            <button type="submit" class="btn btn-primary btn-lg">
+                                <i class="fas fa-sign-in-alt me-2"></i>Đăng nhập
+                            </button>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- Footer -->
+                <div class="card-footer bg-light text-center py-3">
+                    <small class="text-muted">
+                        <i class="fas fa-copyright me-1"></i>2024 POS Shoes System. Tất cả quyền được bảo lưu.
+                    </small>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script>
+        // Toggle password visibility
+        document.getElementById('togglePassword').addEventListener('click', function () {
+            const password = document.getElementById('Password');
+            const eyeIcon = document.getElementById('eyeIcon');
+
+            if (password.type === 'password') {
+                password.type = 'text';
+                eyeIcon.classList.remove('fa-eye');
+                eyeIcon.classList.add('fa-eye-slash');
+            } else {
+                password.type = 'password';
+                eyeIcon.classList.remove('fa-eye-slash');
+                eyeIcon.classList.add('fa-eye');
+            }
+        });
+
+        // Auto-fill demo accounts
+        document.querySelectorAll('code').forEach(function (element) {
+            element.style.cursor = 'pointer';
+            element.addEventListener('click', function () {
+                const [username, password] = this.textContent.split('/');
+                document.getElementById('Username').value = username;
+                document.getElementById('Password').value = password;
+            });
+        });
+
+        // Show validation summary if there are errors
+        const validationSummary = document.querySelector('[data-valmsg-summary="true"]');
+        if (validationSummary && validationSummary.querySelector('li')) {
+            validationSummary.classList.remove('d-none');
+        }
+    </script>
+}

@@ -1,0 +1,473 @@
+@model POS_Shoes.Models.Entities.Product
+@{
+    ViewData["Title"] = "Chỉnh Sửa Sản Phẩm";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h1><i class="fas fa-edit"></i> Chỉnh Sửa Sản Phẩm</h1>
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a asp-action="Index">Sản phẩm</a></li>
+            <li class="breadcrumb-item active">Chỉnh sửa</li>
+        </ol>
+    </nav>
+</div>
+
+<form asp-action="Edit" method="post" enctype="multipart/form-data" id="editProductForm">
+    <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+
+    <!-- Hidden fields cho HTTP PUT -->
+    <input type="hidden" name="_method" value="PUT" />
+    <input type="hidden" asp-for="ProductID" />
+    <input type="hidden" asp-for="Image" />
+
+    <!-- Hidden container for deleted size IDs -->
+    <div id="deletedSizesContainer"></div>
+
+    <div class="row">
+        <div class="col-md-8">
+            <!-- Thông tin cơ bản -->
+            <div class="card mb-3">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-info-circle"></i> Thông Tin Cơ Bản</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label asp-for="ProductName" class="form-label">
+                                    <i class="fas fa-tag"></i> Tên Sản Phẩm <span class="text-danger">*</span>
+                                </label>
+                                <input asp-for="ProductName" class="form-control" />
+                                <span asp-validation-for="ProductName" class="text-danger"></span>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label asp-for="Barcode" class="form-label">
+                                    <i class="fas fa-barcode"></i> Mã Vạch
+                                </label>
+                                <input asp-for="Barcode" class="form-control" />
+                                <span asp-validation-for="Barcode" class="text-danger"></span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label asp-for="Price" class="form-label">
+                                    <i class="fas fa-dollar-sign"></i> Giá <span class="text-danger">*</span>
+                                </label>
+                                <input asp-for="Price" class="form-control" type="number" step="0.01" min="0" />
+                                <span asp-validation-for="Price" class="text-danger"></span>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label class="form-label">
+                                    <i class="fas fa-boxes"></i> Tổng Số Lượng
+                                </label>
+                                <div class="form-control-plaintext">
+                                    <span id="totalQuantityDisplay" class="badge bg-info fs-6">
+                                        @Model.Quantity
+                                    </span>
+                                    <small class="text-muted d-block">Tự động tính từ các size</small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label asp-for="Status" class="form-label">
+                                    <i class="fas fa-toggle-on"></i> Trạng Thái
+                                </label>
+                                <select asp-for="Status" class="form-select">
+                                    <option value="active">Hoạt động</option>
+                                    <option value="inactive">Ngừng bán</option>
+                                </select>
+                                <span asp-validation-for="Status" class="text-danger"></span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label asp-for="Supplier" class="form-label">
+                                    <i class="fas fa-truck"></i> Nhà Cung Cấp
+                                </label>
+                                <input asp-for="Supplier" class="form-control" />
+                                <span asp-validation-for="Supplier" class="text-danger"></span>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label asp-for="PromotionID" class="form-label">
+                                    <i class="fas fa-percent"></i> Khuyến Mãi
+                                </label>
+                                <select asp-for="PromotionID" class="form-select" asp-items="ViewBag.PromotionID">
+                                    <option value="">-- Không áp dụng --</option>
+                                </select>
+                                <span asp-validation-for="PromotionID" class="text-danger"></span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quản lý kích cỡ -->
+            <div class="card mb-3">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-ruler"></i> Quản Lý Kích Cỡ Sản Phẩm</h5>
+                </div>
+                <div class="card-body">
+                    <!-- Kích cỡ hiện có -->
+                    <div class="mb-4">
+                        <h6><i class="fas fa-edit"></i> Cập Nhật Kích Cỡ Hiện Có</h6>
+                        <div id="existingSizesContainer">
+                            @if (Model.ProductSizes != null && Model.ProductSizes.Any())
+                            {
+                                @foreach (var size in Model.ProductSizes)
+                                {
+                                    <div class="row existing-size-row mb-2" data-size-id="@size.SizeID">
+                                        <div class="col-md-4">
+                                            <input type="hidden" name="existingSizeIds" value="@size.SizeID" />
+                                            <input type="text" name="existingSizes" class="form-control" value="@size.Size"
+                                                placeholder="Kích cỡ" />
+                                        </div>
+                                        <div class="col-md-4">
+                                            <input type="number" name="existingQuantities" class="form-control size-quantity"
+                                                value="@size.Quantity" placeholder="Số lượng" min="0"
+                                                data-original-value="@size.Quantity" />
+                                        </div>
+                                        <div class="col-md-4">
+                                            <button type="button" class="btn btn-outline-danger delete-existing-size"
+                                                data-size-id="@size.SizeID">
+                                                <i class="fas fa-trash"></i> Xóa Vĩnh Viễn
+                                            </button>
+                                        </div>
+                                    </div>
+                                }
+                            }
+                            else
+                            {
+                                <p class="text-muted">Chưa có kích cỡ nào.</p>
+                            }
+                        </div>
+                    </div>
+
+                    <!-- Thêm kích cỡ mới -->
+                    <div class="mb-3">
+                        <h6><i class="fas fa-plus"></i> Thêm Kích Cỡ Mới</h6>
+                        <div id="newSizesContainer">
+                            <div class="row new-size-row mb-2">
+                                <div class="col-md-4">
+                                    <input type="text" name="newSizes" class="form-control"
+                                        placeholder="Kích cỡ mới (VD: 41, 42, XL...)" />
+                                </div>
+                                <div class="col-md-4">
+                                    <input type="number" name="newQuantities" class="form-control size-quantity"
+                                        placeholder="Số lượng" min="0" />
+                                </div>
+                                <div class="col-md-4">
+                                    <button type="button" class="btn btn-outline-danger remove-new-size" disabled>
+                                        <i class="fas fa-trash"></i> Xóa
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        <button type="button" class="btn btn-outline-primary" id="addNewSizeBtn">
+                            <i class="fas fa-plus"></i> Thêm Kích Cỡ Mới
+                        </button>
+                    </div>
+
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle"></i>
+                        <strong>Lưu ý:</strong> Để xóa kích cỡ hiện có vĩnh viễn, nhấn nút "Xóa Vĩnh Viễn".
+                        Kích cỡ mới chỉ được thêm nếu có số lượng > 0.
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <!-- Hình ảnh sản phẩm -->
+            <div class="card mb-3">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-image"></i> Hình Ảnh Sản Phẩm</h5>
+                </div>
+                <div class="card-body text-center">
+                    <div id="imagePreview" class="mb-3">
+                        @if (!string.IsNullOrEmpty(Model.Image))
+                        {
+                            <img src="@Model.Image" class="img-fluid rounded" style="max-height: 200px;"
+                                alt="Product Image">
+                        }
+                        else
+                        {
+                            <div class="border rounded p-4 bg-light">
+                                <i class="fas fa-image fa-3x text-muted mb-2"></i>
+                                <p class="text-muted">Chưa có hình ảnh</p>
+                            </div>
+                        }
+                    </div>
+                    <input type="file" name="imageFile" class="form-control" accept="image/*" id="imageInput" />
+                    <small class="text-muted">Để trống nếu không muốn thay đổi hình ảnh</small>
+                </div>
+            </div>
+
+            <!-- Thống kê nhanh -->
+            <div class="card">
+                <div class="card-header">
+                    <h6 class="mb-0"><i class="fas fa-chart-bar"></i> Thống Kê Nhanh</h6>
+                </div>
+                <div class="card-body">
+                    <div class="mb-2">
+                        <small class="text-muted">Tổng số kích cỡ</small>
+                        <div class="fw-bold" id="totalSizesCount">@(Model.ProductSizes?.Count() ?? 0)</div>
+                    </div>
+                    <div class="mb-2">
+                        <small class="text-muted">Tổng số lượng</small>
+                        <div class="fw-bold" id="totalQuantityCount">@Model.Quantity</div>
+                    </div>
+                    <div class="mb-2">
+                        <small class="text-muted">Giá trị tồn kho</small>
+                        <div class="fw-bold text-success" id="totalValue">@((Model.Price *
+                                                        @Model.Quantity).ToString("C0"))</div>
+                    </div>
+                    <div class="mb-2">
+                        <small class="text-muted">ID Sản Phẩm</small>
+                        <div class="font-monospace small text-muted">@Model.ProductID</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-footer d-flex justify-content-between">
+            <div>
+                <a asp-action="Index" class="btn btn-secondary">
+                    <i class="fas fa-arrow-left"></i> Quay Lại
+                </a>
+            </div>
+            <div>
+                <a asp-action="Details" asp-route-id="@Model.ProductID" class="btn btn-outline-info">
+                    <i class="fas fa-eye"></i> Xem Chi Tiết
+                </a>
+                <button type="submit" class="btn btn-primary" id="submitBtn">
+                    <i class="fas fa-save"></i> Cập Nhật Sản Phẩm
+                </button>
+            </div>
+        </div>
+    </div>
+</form>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script>
+        // Global variables
+        let deletedSizes = [];
+
+        // Image preview for edit
+        document.getElementById('imageInput').addEventListener('change', function (e) {
+            const file = e.target.files[0];
+            const preview = document.getElementById('imagePreview');
+
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function (e) {
+                    preview.innerHTML = `<img src="${e.target.result}" class="img-fluid rounded" style="max-height: 200px;">`;
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+
+        // Update total quantity when size quantities change
+        function updateTotalQuantity() {
+            const existingQuantities = document.querySelectorAll('input[name="existingQuantities"]');
+            const newQuantities = document.querySelectorAll('input[name="newQuantities"]');
+
+            let total = 0;
+            let sizeCount = 0;
+
+            // Count existing sizes (not deleted)
+            existingQuantities.forEach(input => {
+                const row = input.closest('.existing-size-row');
+                if (row && row.style.display !== 'none') {
+                    const qty = parseInt(input.value) || 0;
+                    total += qty;
+                    if (qty > 0) sizeCount++;
+                }
+            });
+
+            // Count new sizes
+            newQuantities.forEach(input => {
+                const qty = parseInt(input.value) || 0;
+                if (qty > 0) {
+                    total += qty;
+                    sizeCount++;
+                }
+            });
+
+            // Update display
+            document.getElementById('totalQuantityDisplay').textContent = total;
+            document.getElementById('totalQuantityCount').textContent = total;
+            document.getElementById('totalSizesCount').textContent = sizeCount;
+
+            // Update badge color
+            const badge = document.getElementById('totalQuantityDisplay');
+            badge.className = 'badge fs-6 ' + (total > 10 ? 'bg-success' : total > 0 ? 'bg-warning' : 'bg-danger');
+
+            // Update total value
+            const price = parseFloat(document.querySelector('input[name="Price"]').value) || 0;
+            const totalValue = price * total;
+            document.getElementById('totalValue').textContent = totalValue.toLocaleString('vi-VN', { style: 'currency', currency: 'VND' });
+        }
+
+        // Add event listeners for quantity changes
+        document.addEventListener('input', function (e) {
+            if (e.target.classList.contains('size-quantity')) {
+                updateTotalQuantity();
+            }
+        });
+
+        // Delete existing size permanently
+        document.addEventListener('click', function (e) {
+            if (e.target.closest('.delete-existing-size')) {
+                const btn = e.target.closest('.delete-existing-size');
+                const sizeId = btn.getAttribute('data-size-id');
+                const row = btn.closest('.existing-size-row');
+
+                if (confirm('Bạn có chắc chắn muốn xóa kích cỡ này? Hành động này không thể hoàn tác!')) {
+                    // Add to deleted list
+                    deletedSizes.push(sizeId);
+                    updateDeletedSizesInput();
+
+                    // Remove row from display with animation
+                    row.style.transition = 'opacity 0.3s';
+                    row.style.opacity = '0';
+                    setTimeout(() => {
+                        row.remove();
+                        updateTotalQuantity();
+                    }, 300);
+
+                    // Show success message
+                    showTempMessage('Đã đánh dấu xóa kích cỡ. Nhấn "Cập Nhật" để lưu thay đổi.', 'warning');
+                }
+            }
+        });
+
+        // Update hidden input for deleted sizes
+        function updateDeletedSizesInput() {
+            const container = document.getElementById('deletedSizesContainer');
+            container.innerHTML = '';
+
+            deletedSizes.forEach(sizeId => {
+                const input = document.createElement('input');
+                input.type = 'hidden';
+                input.name = 'deletedSizeIds';
+                input.value = sizeId;
+                container.appendChild(input);
+            });
+        }
+
+        // Add new size functionality
+        document.getElementById('addNewSizeBtn').addEventListener('click', function () {
+            const container = document.getElementById('newSizesContainer');
+            const newRow = document.createElement('div');
+            newRow.className = 'row new-size-row mb-2';
+            newRow.innerHTML = `
+                        <div class="col-md-4">
+                            <input type="text" name="newSizes" class="form-control" placeholder="Kích cỡ mới" />
+                        </div>
+                        <div class="col-md-4">
+                            <input type="number" name="newQuantities" class="form-control size-quantity" placeholder="Số lượng" min="0" />
+                        </div>
+                        <div class="col-md-4">
+                            <button type="button" class="btn btn-outline-danger remove-new-size">
+                                <i class="fas fa-trash"></i> Xóa
+                            </button>
+                        </div>
+                    `;
+            container.appendChild(newRow);
+            updateRemoveButtons();
+        });
+
+        // Remove new size functionality
+        document.addEventListener('click', function (e) {
+            if (e.target.closest('.remove-new-size')) {
+                e.target.closest('.new-size-row').remove();
+                updateRemoveButtons();
+                updateTotalQuantity();
+            }
+        });
+
+        function updateRemoveButtons() {
+            const newRows = document.querySelectorAll('.new-size-row');
+            const removeButtons = document.querySelectorAll('.remove-new-size');
+
+            removeButtons.forEach((btn, index) => {
+                btn.disabled = newRows.length <= 1;
+            });
+        }
+
+        // Show temporary message
+        function showTempMessage(message, type = 'info') {
+            const alertDiv = document.createElement('div');
+            alertDiv.className = `alert alert-${type} alert-dismissible fade show`;
+            alertDiv.innerHTML = `
+                        ${message}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    `;
+
+            const form = document.getElementById('editProductForm');
+            form.insertBefore(alertDiv, form.firstChild);
+
+            // Auto remove after 5 seconds
+            setTimeout(() => {
+                if (alertDiv.parentNode) {
+                    alertDiv.remove();
+                }
+            }, 5000);
+        }
+
+        // Form validation before submit
+        document.getElementById('editProductForm').addEventListener('submit', function (e) {
+            const productName = document.querySelector('input[name="ProductName"]').value.trim();
+            const price = document.querySelector('input[name="Price"]').value;
+
+            if (!productName) {
+                e.preventDefault();
+                showTempMessage('Tên sản phẩm không được để trống!', 'danger');
+                return false;
+            }
+
+            if (!price || parseFloat(price) <= 0) {
+                e.preventDefault();
+                showTempMessage('Giá sản phẩm phải lớn hơn 0!', 'danger');
+                return false;
+            }
+
+            // Show loading
+            const submitBtn = document.getElementById('submitBtn');
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Đang cập nhật...';
+        });
+
+        // Initialize
+        updateRemoveButtons();
+        updateTotalQuantity();
+
+        // Store original values for restoration
+        document.querySelectorAll('input[name="existingQuantities"]').forEach(input => {
+            input.setAttribute('data-original-value', input.value);
+        });
+
+        // Price change handler
+        document.querySelector('input[name="Price"]').addEventListener('input', updateTotalQuantity);
+
+        // Auto-focus on first input
+        document.querySelector('input[name="ProductName"]').focus();
+    </script>
+}

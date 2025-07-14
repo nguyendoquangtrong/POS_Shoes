@@ -1,0 +1,195 @@
+<!-- Areas/Manager/Views/Report/Details.cshtml -->
+@model Report
+@{
+    ViewData["Title"] = "Chi tiết báo cáo";
+    Layout = "~/Areas/Manager/Views/Shared/_Layout.cshtml";
+}
+
+<div class="row">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-file-alt"></i> Chi tiết báo cáo doanh thu</h5>
+                <div class="mt-2">
+                    @switch (Model.Status)
+                    {
+                        case "Generated":
+                            <span class="badge bg-warning fs-6">Chờ duyệt</span>
+                            break;
+                        case "Approved":
+                            <span class="badge bg-success fs-6">Đã duyệt</span>
+                            break;
+                        case "Rejected":
+                            <span class="badge bg-danger fs-6">Bị từ chối</span>
+                            break;
+                    }
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="row mb-3">
+                    <div class="col-6">
+                        <strong>Nhân viên báo cáo:</strong><br>
+                        <i class="fas fa-user text-primary"></i> @Model.User.FullName (@Model.User.Username)
+                    </div>
+                    <div class="col-6">
+                        <strong>Ngày báo cáo:</strong><br>
+                        <i class="fas fa-calendar text-info"></i> @Model.Date.ToString("dd/MM/yyyy")
+                    </div>
+                </div>
+
+                <div class="row mb-3">
+                    <div class="col-6">
+                        <strong>Thời gian tạo:</strong><br>
+                        <i class="fas fa-clock text-muted"></i> @Model.CreatedAt.ToString("dd/MM/yyyy HH:mm")
+                    </div>
+                    <div class="col-6">
+                        @if (Model.UpdatedAt.HasValue)
+                        {
+                            <strong>Thời gian cập nhật:</strong>
+                        
+                            <br>
+                            <i class="fas fa-edit text-muted"></i>
+ 
+                            @Model.UpdatedAt.Value.ToString("dd/MM/yyyy HH:mm")
+                        }
+                    </div>
+                </div>
+
+                <div class="row mb-4">
+                    <div class="col-4">
+                        <div class="card bg-success text-white">
+                            <div class="card-body text-center">
+                                <h4>@Model.TotalRevenue.ToString("N0")</h4>
+                                <p>Tổng doanh thu (VND)</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-4">
+                        <div class="card bg-primary text-white">
+                            <div class="card-body text-center">
+                                <h4>@Model.TotalOrders</h4>
+                                <p>Tổng đơn hàng</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-4">
+                        <div class="card bg-info text-white">
+                            <div class="card-body text-center">
+                                <h4>@Model.AverageOrderValue.ToString("N0")</h4>
+                                <p>Giá trị TB (VND)</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <strong>Mô tả:</strong><br>
+                    <p class="text-muted">@Model.Description</p>
+                </div>
+
+                <div class="mb-3">
+                    <a href="/Saler/Report/ViewReport/@Model.ReportID" target="_blank" class="btn btn-outline-primary">
+                        <i class="fas fa-external-link-alt"></i> Xem báo cáo chi tiết
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header">
+                <h6><i class="fas fa-cogs"></i> Thao tác duyệt</h6>
+            </div>
+            <div class="card-body">
+                @if (Model.Status == "Generated")
+                {
+                    <form method="post" asp-action="Approve" asp-route-id="@Model.ReportID" class="mb-3">
+                        <div class="mb-3">
+                            <label class="form-label">Ghi chú duyệt (tùy chọn):</label>
+                            <textarea name="approvalNote" class="form-control" rows="3"
+                            placeholder="Nhập ghi chú khi duyệt..."></textarea>
+                        </div>
+                        <button type="submit" class="btn btn-success w-100">
+                            <i class="fas fa-check"></i> Duyệt báo cáo
+                        </button>
+                    </form>
+
+                    <hr>
+
+                    <form method="post" asp-action="Reject" asp-route-id="@Model.ReportID">
+                        <div class="mb-3">
+                            <label class="form-label">Lý do từ chối:</label>
+                            <textarea name="rejectionReason" class="form-control" rows="3"
+                            placeholder="Nhập lý do từ chối..." required></textarea>
+                        </div>
+                        <button type="submit" class="btn btn-danger w-100"
+                            onclick="return confirm('Bạn có chắc muốn từ chối báo cáo này?')">
+                            <i class="fas fa-times"></i> Từ chối báo cáo
+                        </button>
+                    </form>
+                }
+                else
+                {
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle"></i>
+                        Báo cáo này đã được xử lý.
+                    </div>
+                }
+
+                <hr>
+
+                <a href="/Manager/Report/Index" class="btn btn-secondary w-100">
+                    <i class="fas fa-arrow-left"></i> Quay lại danh sách
+                </a>
+            </div>
+        </div>
+
+        <!-- Thống kê báo cáo -->
+        <div class="card mt-3">
+            <div class="card-header">
+                <h6><i class="fas fa-chart-line"></i> Thống kê nhanh</h6>
+            </div>
+            <div class="card-body" id="quickStats">
+                <div class="text-center">
+                    <i class="fas fa-spinner fa-spin"></i> Đang tải...
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        // Load quick statistics
+        $(document).ready(function () {
+            $.get('/Manager/Report/GetReportStats')
+                .done(function (data) {
+                    const statsHtml = `
+                            <div class="row text-center">
+                                <div class="col-6 mb-2">
+                                    <h6 class="text-warning">${data.todayPending}</h6>
+                                    <small>Hôm nay chờ duyệt</small>
+                                </div>
+                                <div class="col-6 mb-2">
+                                    <h6 class="text-success">${data.weeklyApproved}</h6>
+                                    <small>Tuần này đã duyệt</small>
+                                </div>
+                                <div class="col-6">
+                                    <h6 class="text-info">${data.monthlyApproved}</h6>
+                                    <small>Tháng này đã duyệt</small>
+                                </div>
+                                <div class="col-6">
+                                    <h6 class="text-danger">${data.totalRejected}</h6>
+                                    <small>Tổng bị từ chối</small>
+                                </div>
+                            </div>
+                        `;
+                    $('#quickStats').html(statsHtml);
+                })
+                .fail(function () {
+                    $('#quickStats').html('<small class="text-muted">Không thể tải thống kê</small>');
+                });
+        });
+    </script>
+}

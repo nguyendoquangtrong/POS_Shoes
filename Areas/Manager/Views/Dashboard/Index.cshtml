@@ -1,0 +1,766 @@
+<!-- Areas/Manager/Views/Dashboard/Index.cshtml -->
+@model POS_Shoes.Areas.Manager.Models.DashboardViewModel
+@{
+    ViewData["Title"] = "Dashboard Manager";
+    Layout = "~/Areas/Manager/Views/Shared/_Layout.cshtml";
+}
+
+<!-- Dashboard Header -->
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h1 class="h3 mb-1"><i class="fas fa-tachometer-alt text-primary"></i> Dashboard Manager</h1>
+        <p class="text-muted">Tổng quan hệ thống quản lý - @DateTime.Now.ToString("dd/MM/yyyy")</p>
+    </div>
+    <div class="d-flex gap-2">
+        <button type="button" class="btn btn-outline-primary" onclick="refreshDashboard()">
+            <i class="fas fa-sync-alt"></i> Làm mới
+        </button>
+        <div class="dropdown">
+            <button class="btn btn-primary dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                <i class="fas fa-download"></i> Xuất báo cáo
+            </button>
+            <ul class="dropdown-menu">
+                <li><a class="dropdown-item" href="#"><i class="fas fa-file-pdf"></i> Xuất PDF</a></li>
+                <li><a class="dropdown-item" href="#"><i class="fas fa-file-excel"></i> Xuất Excel</a></li>
+            </ul>
+        </div>
+    </div>
+</div>
+
+<!-- Statistics Cards -->
+<div class="row g-3 mb-4">
+    <div class="col-xl-2 col-md-4 col-sm-6">
+        <div class="card bg-primary text-white stats-card h-100">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <div class="fs-6 opacity-75">Tổng Sản Phẩm</div>
+                        <div class="fs-4 fw-bold">@Model.TotalProducts</div>
+                    </div>
+                    <div class="opacity-50">
+                        <i class="fas fa-box fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+            <div class="card-footer bg-dark bg-opacity-25">
+                <a class="text-white text-decoration-none d-flex align-items-center justify-content-between"
+                    asp-controller="Product" asp-action="Index">
+                    <span class="small">Xem chi tiết</span>
+                    <i class="fas fa-angle-right"></i>
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-2 col-md-4 col-sm-6">
+        <div class="card bg-success text-white stats-card h-100">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <div class="fs-6 opacity-75">Nhân Viên</div>
+                        <div class="fs-4 fw-bold">@Model.TotalSalers</div>
+                    </div>
+                    <div class="opacity-50">
+                        <i class="fas fa-users fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+            <div class="card-footer bg-dark bg-opacity-25">
+                <a class="text-white text-decoration-none d-flex align-items-center justify-content-between" href="#">
+                    <span class="small">Quản lý nhân viên</span>
+                    <i class="fas fa-angle-right"></i>
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-2 col-md-4 col-sm-6">
+        <div class="card bg-warning text-white stats-card h-100">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <div class="fs-6 opacity-75">Lịch Hôm Nay</div>
+                        <div class="fs-4 fw-bold">@Model.TodayAssignments</div>
+                    </div>
+                    <div class="opacity-50">
+                        <i class="fas fa-calendar-day fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+            <div class="card-footer bg-dark bg-opacity-25">
+                <a class="text-white text-decoration-none d-flex align-items-center justify-content-between"
+                    asp-controller="Assignment" asp-action="Index">
+                    <span class="small">Xem lịch làm việc</span>
+                    <i class="fas fa-angle-right"></i>
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-2 col-md-4 col-sm-6">
+        <div class="card bg-danger text-white stats-card h-100">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <div class="fs-6 opacity-75">Sắp Hết Hàng</div>
+                        <div class="fs-4 fw-bold">@Model.LowStockProducts</div>
+                    </div>
+                    <div class="opacity-50">
+                        <i class="fas fa-exclamation-triangle fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+            <div class="card-footer bg-dark bg-opacity-25">
+                <a class="text-white text-decoration-none d-flex align-items-center justify-content-between"
+                    asp-controller="Product" asp-action="Index">
+                    <span class="small">Kiểm tra kho</span>
+                    <i class="fas fa-angle-right"></i>
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-2 col-md-4 col-sm-6">
+        <div class="card bg-info text-white stats-card h-100">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <div class="fs-6 opacity-75">Chờ Duyệt</div>
+                        <div class="fs-4 fw-bold">@Model.PendingReports</div>
+                    </div>
+                    <div class="opacity-50">
+                        <i class="fas fa-file-check fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+            <div class="card-footer bg-dark bg-opacity-25">
+                <a class="text-white text-decoration-none d-flex align-items-center justify-content-between"
+                    asp-controller="Report" asp-action="PendingReports">
+                    <span class="small">Duyệt báo cáo</span>
+                    <i class="fas fa-angle-right"></i>
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-2 col-md-4 col-sm-6">
+        <div class="card bg-dark text-white stats-card h-100">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <div class="fs-6 opacity-75">DT Hôm Nay</div>
+                        <div class="fs-4 fw-bold">@Model.TodayRevenue.ToString("N0")</div>
+                    </div>
+                    <div class="opacity-50">
+                        <i class="fas fa-chart-line fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+            <div class="card-footer bg-secondary bg-opacity-25">
+                <span class="text-white d-flex align-items-center justify-content-between">
+                    <span class="small">@Model.TodayOrders đơn hàng</span>
+                    <i class="fas fa-shopping-cart"></i>
+                </span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Charts Row 1 -->
+<div class="row g-3 mb-4">
+    <!-- Revenue Trend Chart -->
+    <div class="col-xl-8">
+        <div class="card h-100">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h6 class="mb-0"><i class="fas fa-chart-area me-2"></i>Xu hướng doanh thu 6 tháng</h6>
+                <div class="dropdown">
+                    <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button"
+                        data-bs-toggle="dropdown">
+                        <i class="fas fa-ellipsis-v"></i>
+                    </button>
+                    <ul class="dropdown-menu">
+                        <li><a class="dropdown-item" href="#"><i class="fas fa-download"></i> Xuất dữ liệu</a></li>
+                        <li><a class="dropdown-item" href="#"><i class="fas fa-print"></i> In biểu đồ</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="card-body">
+                <canvas id="salesChart" style="height: 300px;"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- Daily Revenue Chart -->
+    <div class="col-xl-4">
+        <div class="card h-100">
+            <div class="card-header">
+                <h6 class="mb-0"><i class="fas fa-chart-line me-2"></i>Doanh thu 7 ngày qua</h6>
+            </div>
+            <div class="card-body">
+                <canvas id="dailyRevenueChart" style="height: 300px;"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Charts Row 2 -->
+<div class="row g-3 mb-4">
+    <!-- Product Stock Chart -->
+    <div class="col-xl-6">
+        <div class="card h-100">
+            <div class="card-header">
+                <h6 class="mb-0"><i class="fas fa-chart-bar me-2"></i>Tồn kho theo nhà cung cấp</h6>
+            </div>
+            <div class="card-body">
+                <canvas id="productStockChart" style="height: 300px;"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- Assignment Chart -->
+    <div class="col-xl-6">
+        <div class="card h-100">
+            <div class="card-header">
+                <h6 class="mb-0"><i class="fas fa-chart-line me-2"></i>Lịch làm việc tuần này</h6>
+            </div>
+            <div class="card-body">
+                <canvas id="assignmentChart" style="height: 300px;"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Bottom Row -->
+<div class="row g-3 mb-4">
+    <!-- User Activity Chart -->
+    <div class="col-xl-4">
+        <div class="card h-100">
+            <div class="card-header">
+                <h6 class="mb-0"><i class="fas fa-chart-pie me-2"></i>Hiệu suất nhân viên</h6>
+            </div>
+            <div class="card-body">
+                <canvas id="userActivityChart" style="height: 300px;"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Reports -->
+    <div class="col-xl-8">
+        <div class="card h-100">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h6 class="mb-0"><i class="fas fa-file-alt me-2"></i>Báo cáo gần đây</h6>
+                <a href="/Manager/Report/Index" class="btn btn-sm btn-outline-primary">
+                    <i class="fas fa-eye"></i> Xem tất cả
+                </a>
+            </div>
+            <div class="card-body">
+                @if (Model.RecentReports.Any())
+                {
+                    <div class="table-responsive">
+                        <table class="table table-sm table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Nhân viên</th>
+                                    <th>Doanh thu</th>
+                                    <th>Đơn hàng</th>
+                                    <th>Trạng thái</th>
+                                    <th>Thời gian</th>
+                                    <th></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var report in Model.RecentReports)
+                                {
+                                    <tr>
+                                        <td>
+                                            <div class="d-flex align-items-center">
+                                                <div class="avatar-sm me-2">
+                                                    <i class="fas fa-user-circle text-primary fa-lg"></i>
+                                                </div>
+                                                <div>
+                                                    <div class="fw-semibold">@report.User.FullName</div>
+                                                    <small class="text-muted">@report.User.Username</small>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <span class="fw-bold text-success">@report.TotalRevenue.ToString("N0")</span>
+                                        </td>
+                                        <td>
+                                            <span class="badge bg-info">@report.TotalOrders</span>
+                                        </td>
+                                        <td>
+                                            @switch (report.Status)
+                                            {
+                                                case "Generated":
+                                                    <span class="badge bg-warning">Chờ duyệt</span>
+                                                    break;
+                                                case "Approved":
+                                                    <span class="badge bg-success">Đã duyệt</span>
+                                                    break;
+                                                case "Rejected":
+                                                    <span class="badge bg-danger">Từ chối</span>
+                                                    break;
+                                            }
+                                        </td>
+                                        <td>
+                                            <small class="text-muted">@report.CreatedAt.ToString("dd/MM HH:mm")</small>
+                                        </td>
+                                        <td>
+                                            <div class="btn-group btn-group-sm">
+                                                <a href="/Manager/Report/Details/@report.ReportID"
+                                                    class="btn btn-outline-primary btn-sm">
+                                                    <i class="fas fa-eye"></i>
+                                                </a>
+                                                @if (report.Status == "Generated")
+                                                {
+                                                    <button class="btn btn-outline-success btn-sm"
+                                                        onclick="quickApproveReport('@report.ReportID')">
+                                                        <i class="fas fa-check"></i>
+                                                    </button>
+                                                }
+                                            </div>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                }
+                else
+                {
+                    <div class="text-center py-3">
+                        <i class="fas fa-file-excel fa-2x text-muted mb-2"></i>
+                        <p class="text-muted mb-0">Chưa có báo cáo nào</p>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Recent Assignments -->
+<div class="row g-3">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h6 class="mb-0"><i class="fas fa-calendar-check me-2"></i>Lịch làm việc gần đây</h6>
+                <a href="/Manager/Assignment/Index" class="btn btn-sm btn-outline-primary">
+                    <i class="fas fa-calendar-alt"></i> Quản lý lịch làm việc
+                </a>
+            </div>
+            <div class="card-body">
+                @if (Model.RecentAssignments.Any())
+                {
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Nhân viên</th>
+                                    <th>Mô tả công việc</th>
+                                    <th>Ca làm việc</th>
+                                    <th>Ngày</th>
+                                    <th>Thời gian</th>
+                                    <th>Trạng thái</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var assignment in Model.RecentAssignments)
+                                {
+                                    <tr>
+                                        <td>
+                                            <div class="d-flex align-items-center">
+                                                <div class="avatar-sm me-2">
+                                                    <i class="fas fa-user-tag text-primary fa-lg"></i>
+                                                </div>
+                                                <div>
+                                                    <div class="fw-semibold">@assignment.User.FullName</div>
+                                                    <small class="text-muted">@assignment.User.Username</small>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td>@assignment.Description</td>
+                                        <td>
+                                            <span class="badge bg-info">@assignment.Shift</span>
+                                        </td>
+                                        <td>@assignment.Date.ToString("dd/MM/yyyy")</td>
+                                        <td>
+                                            <span class="text-muted">
+                                                @assignment.StartTime.ToString("HH:mm") - @assignment.EndTime.ToString("HH:mm")
+                                            </span>
+                                        </td>
+                                        <td>
+                                            @if (assignment.Date == DateOnly.FromDateTime(DateTime.Today))
+                                            {
+                                                <span class="badge bg-warning">Hôm nay</span>
+                                            }
+                                            else if (assignment.Date > DateOnly.FromDateTime(DateTime.Today))
+                                            {
+                                                <span class="badge bg-success">Sắp tới</span>
+                                            }
+                                            else
+                                            {
+                                                <span class="badge bg-secondary">Hoàn thành</span>
+                                            }
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                }
+                else
+                {
+                    <div class="text-center py-4">
+                        <i class="fas fa-calendar-times fa-3x text-muted mb-3"></i>
+                        <h6 class="text-muted">Chưa có lịch làm việc nào</h6>
+                        <p class="text-muted">Hãy tạo lịch làm việc cho nhân viên bán hàng</p>
+                        <a href="/Manager/Assignment/Create" class="btn btn-primary">
+                            <i class="fas fa-plus"></i> Tạo lịch làm việc
+                        </a>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Custom Styles -->
+<style>
+    .stats-card {
+        transition: all 0.3s ease;
+        border: none;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    }
+
+    .stats-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 5px 20px rgba(0, 0, 0, 0.15);
+    }
+
+    .card {
+        border: none;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
+        border-radius: 10px;
+    }
+
+    .card-header {
+        background: transparent;
+        border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+        padding: 1rem 1.25rem;
+    }
+
+    .avatar-sm {
+        width: 32px;
+        height: 32px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .table> :not(caption)>*>* {
+        padding: 0.75rem 0.5rem;
+    }
+
+    .btn-group-sm>.btn,
+    .btn-sm {
+        padding: 0.25rem 0.5rem;
+        font-size: 0.875rem;
+    }
+
+    .opacity-75 {
+        opacity: 0.75;
+    }
+
+    .opacity-50 {
+        opacity: 0.5;
+    }
+
+    @@media (max-width: 768px) {
+        .stats-card .fs-4 {
+            font-size: 1.5rem !important;
+        }
+
+        .stats-card .fa-2x {
+            font-size: 1.5em !important;
+        }
+    }
+</style>
+
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        // Global chart configuration
+        Chart.defaults.font.family = 'Inter, system-ui, sans-serif';
+        Chart.defaults.color = '#6B7280';
+        Chart.defaults.plugins.legend.display = true;
+        Chart.defaults.plugins.legend.position = 'bottom';
+
+        // Sales Revenue Chart
+        const salesCtx = document.getElementById('salesChart').getContext('2d');
+        new Chart(salesCtx, {
+            type: 'line',
+            data: {
+                labels: @Html.Raw(Json.Serialize(Model.SalesChart.Months)),
+                datasets: [{
+                    label: 'Doanh Thu (VNĐ)',
+                    data: @Html.Raw(Json.Serialize(Model.SalesChart.Revenue)),
+                    borderColor: '#3B82F6',
+                    backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                    borderWidth: 3,
+                    tension: 0.4,
+                    fill: true,
+                    yAxisID: 'y'
+                }, {
+                    label: 'Số Đơn Hàng',
+                    data: @Html.Raw(Json.Serialize(Model.SalesChart.OrderCounts)),
+                    borderColor: '#EF4444',
+                    backgroundColor: 'rgba(239, 68, 68, 0.1)',
+                    borderWidth: 3,
+                    tension: 0.4,
+                    fill: true,
+                    yAxisID: 'y1'
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                interaction: {
+                    mode: 'index',
+                    intersect: false,
+                },
+                plugins: {
+                    legend: {
+                        position: 'top',
+                    }
+                },
+                scales: {
+                    y: {
+                        type: 'linear',
+                        display: true,
+                        position: 'left',
+                        grid: {
+                            color: 'rgba(0,0,0,0.1)'
+                        }
+                    },
+                    y1: {
+                        type: 'linear',
+                        display: true,
+                        position: 'right',
+                        grid: {
+                            drawOnChartArea: false,
+                        },
+                    },
+                    x: {
+                        grid: {
+                            color: 'rgba(0,0,0,0.1)'
+                        }
+                    }
+                }
+            }
+        });
+
+        // Daily Revenue Chart
+        const dailyRevenueCtx = document.getElementById('dailyRevenueChart').getContext('2d');
+        new Chart(dailyRevenueCtx, {
+            type: 'bar',
+            data: {
+                labels: @Html.Raw(Json.Serialize(Model.RevenueChart.Days)),
+                datasets: [{
+                    label: 'Doanh thu',
+                    data: @Html.Raw(Json.Serialize(Model.RevenueChart.DailyRevenue)),
+                    backgroundColor: [
+                        '#3B82F6', '#10B981', '#F59E0B', '#EF4444',
+                        '#8B5CF6', '#06B6D4', '#84CC16'
+                    ],
+                    borderRadius: 4,
+                    borderSkipped: false,
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: false
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        grid: {
+                            color: 'rgba(0,0,0,0.1)'
+                        }
+                    },
+                    x: {
+                        grid: {
+                            display: false
+                        }
+                    }
+                }
+            }
+        });
+
+        // Product Stock Chart
+        const productStockCtx = document.getElementById('productStockChart').getContext('2d');
+        new Chart(productStockCtx, {
+            type: 'bar',
+            data: {
+                labels: @Html.Raw(Json.Serialize(Model.ProductStockChart.Categories)),
+                datasets: [{
+                    label: 'Tổng Tồn Kho',
+                    data: @Html.Raw(Json.Serialize(Model.ProductStockChart.StockQuantities)),
+                    backgroundColor: '#10B981',
+                    borderRadius: 4,
+                    borderSkipped: false,
+                }, {
+                    label: 'Sản Phẩm Sắp Hết',
+                    data: @Html.Raw(Json.Serialize(Model.ProductStockChart.LowStockCounts)),
+                    backgroundColor: '#EF4444',
+                    borderRadius: 4,
+                    borderSkipped: false,
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        grid: {
+                            color: 'rgba(0,0,0,0.1)'
+                        }
+                    },
+                    x: {
+                        grid: {
+                            display: false
+                        }
+                    }
+                }
+            }
+        });
+
+        // Assignment Chart
+        const assignmentCtx = document.getElementById('assignmentChart').getContext('2d');
+        new Chart(assignmentCtx, {
+            type: 'line',
+            data: {
+                labels: @Html.Raw(Json.Serialize(Model.AssignmentChart.WeekDays)),
+                datasets: [{
+                    label: 'Số Lịch Làm Việc',
+                    data: @Html.Raw(Json.Serialize(Model.AssignmentChart.AssignmentCounts)),
+                    borderColor: '#F59E0B',
+                    backgroundColor: 'rgba(245, 158, 11, 0.1)',
+                    borderWidth: 3,
+                    tension: 0.4,
+                    fill: true,
+                    pointBackgroundColor: '#F59E0B',
+                    pointBorderColor: '#FFFFFF',
+                    pointBorderWidth: 2,
+                    pointRadius: 6,
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: false
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        grid: {
+                            color: 'rgba(0,0,0,0.1)'
+                        }
+                    },
+                    x: {
+                        grid: {
+                            display: false
+                        }
+                    }
+                }
+            }
+        });
+
+        // User Activity Chart
+        const userActivityCtx = document.getElementById('userActivityChart').getContext('2d');
+        new Chart(userActivityCtx, {
+            type: 'doughnut',
+            data: {
+                labels: @Html.Raw(Json.Serialize(Model.UserActivityChart.SalerNames)),
+                datasets: [{
+                    label: 'Công Việc Hoàn Thành',
+                    data: @Html.Raw(Json.Serialize(Model.UserActivityChart.CompletedTasks)),
+                    backgroundColor: [
+                        '#3B82F6', '#10B981', '#F59E0B', '#EF4444',
+                        '#8B5CF6', '#06B6D4', '#84CC16', '#F97316'
+                    ],
+                    borderWidth: 0,
+                    hoverBorderWidth: 2,
+                    hoverBorderColor: '#FFFFFF'
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                cutout: '60%',
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                        labels: {
+                            padding: 20,
+                            usePointStyle: true,
+                            pointStyle: 'circle'
+                        }
+                    }
+                }
+            }
+        });
+
+        // Dashboard Functions
+        function refreshDashboard() {
+            // Show loading state
+            const refreshBtn = document.querySelector('button[onclick="refreshDashboard()"]');
+            const originalContent = refreshBtn.innerHTML;
+            refreshBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Đang tải...';
+            refreshBtn.disabled = true;
+
+            // Simulate refresh (in real app, this would reload data)
+            setTimeout(() => {
+                location.reload();
+            }, 1000);
+        }
+
+        function quickApproveReport(reportId) {
+            if (confirm('Bạn có chắc muốn duyệt báo cáo này?')) {
+                $.post('/Manager/Report/Approve', {
+                    id: reportId,
+                    __RequestVerificationToken: $('input[name="__RequestVerificationToken"]').val()
+                })
+                    .done(function () {
+                        location.reload();
+                    })
+                    .fail(function () {
+                        alert('Có lỗi xảy ra khi duyệt báo cáo');
+                    });
+            }
+        }
+
+        // Auto refresh stats every 5 minutes
+        setInterval(function () {
+            $.get('/Manager/Dashboard/GetTodayStats')
+                .done(function (data) {
+                    // Update stats cards if needed
+                    console.log('Stats updated:', data);
+                });
+        }, 300000);
+
+        // Initialize tooltips
+        var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+        var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+            return new bootstrap.Tooltip(tooltipTriggerEl);
+        });
+    </script>
+}

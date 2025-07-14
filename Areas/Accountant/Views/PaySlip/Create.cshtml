@@ -1,0 +1,225 @@
+@using POS_Shoes.Models.ViewModels
+<!-- Areas/Accountant/Views/PaySlip/Create.cshtml -->
+@model CreatePaySlipViewModel
+@{
+    ViewData["Title"] = "Tạo phiếu lương";
+    Layout = "~/Areas/Accountant/Views/Shared/_Layout.cshtml";
+}
+
+<div class="row">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-plus"></i> Tạo phiếu lương mới</h5>
+            </div>
+            <div class="card-body">
+                <form asp-action="Create" method="post" id="paySlipForm">
+                    <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label asp-for="UserID" class="form-label"></label>
+                                <select asp-for="UserID" class="form-select" id="userSelect">
+                                    <option value="">Chọn nhân viên</option>
+                                    @foreach (var user in (List<User>)ViewBag.Users)
+                                    {
+                                        <option value="@user.UserID" data-hourly-rate="@user.HourlyRate">
+                                            @user.FullName - @user.Role
+                                        </option>
+                                    }
+                                </select>
+                                <span asp-validation-for="UserID" class="text-danger"></span>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="mb-3">
+                                <label asp-for="PayPeriodStart" class="form-label"></label>
+                                <input asp-for="PayPeriodStart" class="form-control" type="date" id="startDate" />
+                                <span asp-validation-for="PayPeriodStart" class="text-danger"></span>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="mb-3">
+                                <label asp-for="PayPeriodEnd" class="form-label"></label>
+                                <input asp-for="PayPeriodEnd" class="form-control" type="date" id="endDate" />
+                                <span asp-validation-for="PayPeriodEnd" class="text-danger"></span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label asp-for="Bonus" class="form-label"></label>
+                                <input asp-for="Bonus" class="form-control" type="number" step="1000" id="bonusInput" />
+                                <span asp-validation-for="Bonus" class="text-danger"></span>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label asp-for="Deduction" class="form-label"></label>
+                                <input asp-for="Deduction" class="form-control" type="number" step="1000"
+                                    id="deductionInput" />
+                                <span asp-validation-for="Deduction" class="text-danger"></span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label asp-for="Note" class="form-label"></label>
+                        <textarea asp-for="Note" class="form-control" rows="3"
+                            placeholder="Ghi chú về phiếu lương..."></textarea>
+                        <span asp-validation-for="Note" class="text-danger"></span>
+                    </div>
+
+                    <div class="d-grid gap-2">
+                        <button type="button" class="btn btn-info" id="previewBtn">
+                            <i class="fas fa-eye"></i> Xem trước
+                        </button>
+                        <button type="submit" class="btn btn-primary" id="submitBtn" disabled>
+                            <i class="fas fa-save"></i> Tạo phiếu lương
+                        </button>
+                        <a href="/Accountant/PaySlip/Index" class="btn btn-secondary">
+                            <i class="fas fa-arrow-left"></i> Quay lại
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header">
+                <h6><i class="fas fa-calculator"></i> Tính toán lương</h6>
+            </div>
+            <div class="card-body" id="calculationPreview">
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle"></i>
+                    Chọn nhân viên và kỳ lương để xem tính toán
+                </div>
+            </div>
+        </div>
+
+        <div class="card mt-3" id="assignmentsList" style="display: none;">
+            <div class="card-header">
+                <h6><i class="fas fa-clock"></i> Lịch làm việc</h6>
+            </div>
+            <div class="card-body">
+                <div id="assignmentsContent">
+                    <!-- Assignments will be loaded here -->
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        $('#previewBtn').click(function () {
+            const userId = $('#userSelect').val();
+            const startDate = $('#startDate').val();
+            const endDate = $('#endDate').val();
+            const bonus = parseFloat($('#bonusInput').val()) || 0;
+            const deduction = parseFloat($('#deductionInput').val()) || 0;
+
+            if (!userId || !startDate || !endDate) {
+                alert('Vui lòng chọn nhân viên và kỳ lương');
+                return;
+            }
+
+            const data = {
+                UserID: userId,
+                PayPeriodStart: startDate,
+                PayPeriodEnd: endDate,
+                Bonus: bonus,
+                Deduction: deduction
+            };
+
+            $('#previewBtn').prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Đang tính toán...');
+
+            $.ajax({
+                url: '/Accountant/PaySlip/CalculatePreview',
+                type: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify(data),
+                success: function (response) {
+                    displayCalculation(response);
+                    $('#submitBtn').prop('disabled', false);
+                },
+                error: function () {
+                    alert('Có lỗi xảy ra khi tính toán lương');
+                },
+                complete: function () {
+                    $('#previewBtn').prop('disabled', false).html('<i class="fas fa-eye"></i> Xem trước');
+                }
+            });
+        });
+
+        function displayCalculation(data) {
+            const html = `
+                    <div class="calculation-result">
+                        <div class="row mb-2">
+                            <div class="col-6"><strong>Lương giờ:</strong></div>
+                            <div class="col-6">${data.hourlyRate.toLocaleString()} VND</div>
+                        </div>
+                        <div class="row mb-2">
+                            <div class="col-6"><strong>Tổng giờ:</strong></div>
+                            <div class="col-6">${data.totalHours} giờ</div>
+                        </div>
+                        <div class="row mb-2">
+                            <div class="col-6"><strong>Lương cơ bản:</strong></div>
+                            <div class="col-6">${data.basicSalary.toLocaleString()} VND</div>
+                        </div>
+                        <div class="row mb-2">
+                            <div class="col-6"><strong>Tiền thưởng:</strong></div>
+                            <div class="col-6">${data.bonus.toLocaleString()} VND</div>
+                        </div>
+                        <div class="row mb-2">
+                            <div class="col-6"><strong>Tiền khấu trừ:</strong></div>
+                            <div class="col-6">${data.deduction.toLocaleString()} VND</div>
+                        </div>
+                        <hr>
+                        <div class="row">
+                            <div class="col-6"><strong>Lương thực nhận:</strong></div>
+                            <div class="col-6 text-success"><strong>${data.netSalary.toLocaleString()} VND</strong></div>
+                        </div>
+                    </div>
+                `;
+            $('#calculationPreview').html(html);
+
+            // Display assignments
+            if (data.assignments && data.assignments.length > 0) {
+                let assignmentsHtml = '<div class="table-responsive"><table class="table table-sm">';
+                assignmentsHtml += '<thead><tr><th>Ngày</th><th>Ca</th><th>Giờ</th></tr></thead><tbody>';
+
+                data.assignments.forEach(function (assignment) {
+                    assignmentsHtml += `
+                            <tr>
+                                <td>${assignment.date}</td>
+                                <td>${assignment.shift}</td>
+                                <td>${assignment.hours}h</td>
+                            </tr>
+                        `;
+                });
+
+                assignmentsHtml += '</tbody></table></div>';
+                $('#assignmentsContent').html(assignmentsHtml);
+                $('#assignmentsList').show();
+            } else {
+                $('#assignmentsList').hide();
+            }
+        }
+
+        // Auto-calculate when inputs change
+        $('#bonusInput, #deductionInput').on('input', function () {
+            if ($('#submitBtn').prop('disabled') === false) {
+                $('#previewBtn').click();
+            }
+        });
+    </script>
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+}

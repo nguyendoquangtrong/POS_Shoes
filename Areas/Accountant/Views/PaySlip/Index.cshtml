@@ -1,0 +1,466 @@
+@using POS_Shoes.Models.ViewModels
+@model PaySlipListViewModel
+@{
+    ViewData["Title"] = "Danh sách phiếu lương";
+    Layout = "~/Areas/Accountant/Views/Shared/_Layout.cshtml";
+}
+
+<div class="row">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5><i class="fas fa-list"></i> Danh sách phiếu lương</h5>
+                <a href="/Accountant/PaySlip/Create" class="btn btn-primary">
+                    <i class="fas fa-plus"></i> Tạo phiếu lương mới
+                </a>
+            </div>
+            <div class="card-body">
+                <!-- Filter Form -->
+                <form method="get" class="row mb-4">
+                    <div class="col-md-2">
+                        <label class="form-label">Tháng:</label>
+                        <select name="month" class="form-select">
+                            <option value="">Chọn tháng</option>
+                            @for (int i = 1; i <= 12; i++)
+                            {
+                                @if (Model.Month == i)
+                                {
+                                    <option value="@i" selected>Tháng @i</option>
+                                }
+                                else
+                                {
+                                    <option value="@i">Tháng @i</option>
+                                }
+                            }
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label">Năm:</label>
+                        <select asp-for="Year" class="form-select">
+                            @for (int i = DateTime.Now.Year; i >= DateTime.Now.Year - 5; i--)
+                            {
+                                <option value="@i">@i</option>
+                            }
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Nhân viên:</label>
+                        <select asp-for="UserID" class="form-select">
+                            <option value="">Chọn nhân viên</option>
+                            @foreach (var user in ViewBag.Users as List<User>)
+                            {
+                                <option value="@user.UserID">@user.FullName - @user.Role</option>
+                            }
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Trạng thái:</label>
+                        <select id="statusFilter" name="status" class="form-select" onchange="filterReports()">
+                            <option value="">Tất cả trạng thái</option>
+                            <option value="Generated"
+                                selected="@(ViewBag.SelectedStatus == "Generated" ? "selected" : null)">Chờ duyệt
+                            </option>
+                            <option value="Approved"
+                                selected="@(ViewBag.SelectedStatus == "Approved" ? "selected" : null)">Đã duyệt</option>
+                            <option value="Rejected"
+                                selected="@(ViewBag.SelectedStatus == "Rejected" ? "selected" : null)">Bị từ chối
+                            </option>
+                        </select>
+
+                    </div>
+
+
+                    <div class="col-md-2">
+                        <label class="form-label">&nbsp;</label>
+                        <button type="submit" class="btn btn-secondary d-block w-100">
+                            <i class="fas fa-filter"></i> Lọc
+                        </button>
+                    </div>
+                </form>
+
+                @if (Model.PaySlips.Any())
+                {
+                    <!-- Summary Statistics -->
+                    <div class="row mb-4">
+                        <div class="col-md-3">
+                            <div class="card bg-primary text-white">
+                                <div class="card-body">
+                                    <div class="d-flex justify-content-between">
+                                        <div>
+                                            <h4>@Model.PaySlips.Count</h4>
+                                            <p>Tổng phiếu lương</p>
+                                        </div>
+                                        <div class="align-self-center">
+                                            <i class="fas fa-file-alt fa-2x"></i>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card bg-success text-white">
+                                <div class="card-body">
+                                    <div class="d-flex justify-content-between">
+                                        <div>
+                                            <h4>@Model.PaySlips.Sum(p => p.NetSalary).ToString("N0")</h4>
+                                            <p>Tổng lương (VND)</p>
+                                        </div>
+                                        <div class="align-self-center">
+                                            <i class="fas fa-money-bill-wave fa-2x"></i>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card bg-warning text-white">
+                                <div class="card-body">
+                                    <div class="d-flex justify-content-between">
+                                        <div>
+                                            <h4>@Model.PaySlips.Count(p => p.Status == "Generated")</h4>
+                                            <p>Chờ duyệt</p>
+                                        </div>
+                                        <div class="align-self-center">
+                                            <i class="fas fa-clock fa-2x"></i>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card bg-info text-white">
+                                <div class="card-body">
+                                    <div class="d-flex justify-content-between">
+                                        <div>
+                                            <h4>@Model.PaySlips.Count(p => p.Status == "Approved")</h4>
+                                            <p>Đã duyệt</p>
+                                        </div>
+                                        <div class="align-self-center">
+                                            <i class="fas fa-check-circle fa-2x"></i>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- PaySlips Table -->
+                    <div class="table-responsive">
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>Nhân viên</th>
+                                    <th>Kỳ lương</th>
+                                    <th>Lương cơ bản</th>
+                                    <th>Thưởng</th>
+                                    <th>Khấu trừ</th>
+                                    <th>Thực nhận</th>
+                                    <th>Trạng thái</th>
+                                    <th>Ngày tạo</th>
+                                    <th>Thao tác</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var paySlip in Model.PaySlips)
+                                {
+                                    <tr>
+                                        <td>
+                                            <div class="d-flex align-items-center">
+                                                <i class="fas fa-user-circle fa-lg me-2 text-primary"></i>
+                                                <div>
+                                                    <strong>@paySlip.User.FullName</strong><br>
+                                                    <small class="text-muted">@paySlip.User.Role</small>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <div>
+                                                <strong>@paySlip.PayPeriodStart.ToString("dd/MM/yyyy")</strong><br>
+                                                <small class="text-muted">đến
+                                                    @paySlip.PayPeriodEnd.ToString("dd/MM/yyyy")</small>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <span class="fw-bold text-info">@paySlip.BasicSalary.ToString("N0") VND</span><br>
+                                            <small class="text-muted">@paySlip.TotalHours giờ ×
+                                                @paySlip.HourlyRate.ToString("N0")</small>
+                                        </td>
+                                        <td>
+                                            @if (paySlip.Bonus > 0)
+                                            {
+                                                <span class="text-success">+@paySlip.Bonus.ToString("N0") VND</span>
+                                            }
+                                            else
+                                            {
+                                                <span class="text-muted">0 VND</span>
+                                            }
+                                        </td>
+                                        <td>
+                                            @if (paySlip.Deduction > 0)
+                                            {
+                                                <span class="text-danger">-@paySlip.Deduction.ToString("N0") VND</span>
+                                            }
+                                            else
+                                            {
+                                                <span class="text-muted">0 VND</span>
+                                            }
+                                        </td>
+                                        <td>
+                                            <strong class="text-success fs-6">@paySlip.NetSalary.ToString("N0") VND</strong>
+                                        </td>
+                                        <td>
+                                            @switch (paySlip.Status)
+                                            {
+                                                case "Generated":
+                                                    <span class="badge bg-warning">Đã tạo</span>
+                                                    break;
+                                                case "Approved":
+                                                    <span class="badge bg-success">Đã duyệt</span>
+                                                    break;
+                                                case "Rejected":
+                                                    <span class="badge bg-danger">Bị từ chối</span>
+                                                    break;
+                                                case "Paid":
+                                                    <span class="badge bg-info">Đã thanh toán</span>
+                                                    break;
+                                                default:
+                                                    <span class="badge bg-secondary">@paySlip.Status</span>
+                                                    break;
+                                            }
+                                        </td>
+                                        <td>
+                                            <div>
+                                                @paySlip.CreatedAt.ToString("dd/MM/yyyy")<br>
+                                                <small class="text-muted">@paySlip.CreatedAt.ToString("HH:mm")</small>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <div class="btn-group btn-group-sm">
+                                                <a href="/Accountant/PaySlip/Details/@paySlip.PaySlipID"
+                                                    class="btn btn-outline-primary" title="Xem chi tiết">
+                                                    <i class="fas fa-eye"></i>
+                                                </a>
+                                                @if (paySlip.Status == "Approved")
+                                                {
+                                                    <button class="btn btn-outline-success" title="In phiếu lương"
+                                                        onclick="printPaySlip('@paySlip.PaySlipID')">
+                                                        <i class="fas fa-print"></i>
+                                                    </button>
+                                                }
+                                            </div>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                            <tfoot>
+                                <tr class="table-secondary">
+                                    <th colspan="2">Tổng cộng (@Model.PaySlips.Count phiếu lương)</th>
+                                    <th>@Model.PaySlips.Sum(p => p.BasicSalary).ToString("N0") VND</th>
+                                    <th>@Model.PaySlips.Sum(p => p.Bonus).ToString("N0") VND</th>
+                                    <th>@Model.PaySlips.Sum(p => p.Deduction).ToString("N0") VND</th>
+                                    <th>@Model.PaySlips.Sum(p => p.NetSalary).ToString("N0") VND</th>
+                                    <th colspan="3"></th>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                }
+                else
+                {
+                    <!-- Empty State -->
+                    <div class="text-center py-5">
+                        <i class="fas fa-file-excel fa-4x text-muted mb-3"></i>
+                        <h5 class="text-muted">Chưa có phiếu lương nào</h5>
+                        <p class="text-muted">
+                            Chưa có phiếu lương nào cho tháng @Model.Month/@Model.Year
+                            @if (Model.UserID.HasValue)
+                            {
+                                <span> của nhân viên đã chọn</span>
+                            }
+                        </p>
+                        <a href="/Accountant/PaySlip/Create" class="btn btn-primary">
+                            <i class="fas fa-plus"></i> Tạo phiếu lương đầu tiên
+                        </a>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Quick Actions Panel -->
+<div class="row mt-3">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-header">
+                <h6><i class="fas fa-rocket"></i> Thao tác nhanh</h6>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-3">
+                        <a href="/Accountant/PaySlip/Create" class="btn btn-primary w-100 mb-2">
+                            <i class="fas fa-plus"></i> Tạo phiếu lương mới
+                        </a>
+                    </div>
+                    <div class="col-md-3">
+                        <button class="btn btn-success w-100 mb-2" onclick="exportToExcel()">
+                            <i class="fas fa-file-excel"></i> Xuất Excel
+                        </button>
+                    </div>
+                    <div class="col-md-3">
+                        <button class="btn btn-info w-100 mb-2" onclick="printAll()">
+                            <i class="fas fa-print"></i> In tất cả
+                        </button>
+                    </div>
+                    <div class="col-md-3">
+                        <button class="btn btn-warning w-100 mb-2" onclick="showStatistics()">
+                            <i class="fas fa-chart-bar"></i> Thống kê chi tiết
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        function printPaySlip(paySlipId) {
+            window.open(`/Accountant/PaySlip/Details/${paySlipId}`, '_blank');
+        }
+
+        function exportToExcel() {
+            // Get current filter parameters
+            const urlParams = new URLSearchParams(window.location.search);
+            const month = urlParams.get('month') || '@Model.Month';
+            const year = urlParams.get('year') || '@Model.Year';
+            const userID = urlParams.get('userID') || '';
+            const status = urlParams.get('status') || '';
+
+            // Create export URL
+            const exportUrl = `/Accountant/PaySlip/ExportExcel?month=${month}&year=${year}&userID=${userID}&status=${status}`;
+            window.open(exportUrl, '_blank');
+        }
+
+        function printAll() {
+            if (confirm('Bạn có chắc muốn in tất cả phiếu lương hiện tại?')) {
+                // Implementation for printing all payslips
+                alert('Chức năng in hàng loạt đang được phát triển');
+            }
+        }
+
+        function showStatistics() {
+            // Show detailed statistics modal
+            $('#statisticsModal').modal('show');
+        }
+
+        // Auto-refresh every 5 minutes
+        setTimeout(function () {
+            location.reload();
+        }, 300000);
+
+        // Quick filter buttons
+        function quickFilter(status) {
+            const url = new URL(window.location);
+            url.searchParams.set('status', status);
+            window.location.href = url.toString();
+        }
+
+        // Add quick filter buttons
+        $(document).ready(function () {
+            const currentStatus = '@Model.Status';
+
+            // Add quick filter buttons to the header
+            const quickFilters = `
+                                                                                            <div class="btn-group btn-group-sm ms-2" role="group">
+                                                                                                <button type="button" class="btn ${!currentStatus ? 'btn-primary' : 'btn-outline-primary'}" onclick="quickFilter('')">
+                                                                                                    Tất cả
+                                                                                                </button>
+                                                                                                <button type="button" class="btn ${currentStatus === 'Generated' ? 'btn-warning' : 'btn-outline-warning'}" onclick="quickFilter('Generated')">
+                                                                                                    Chờ duyệt
+                                                                                                </button>
+                                                                                                <button type="button" class="btn ${currentStatus === 'Approved' ? 'btn-success' : 'btn-outline-success'}" onclick="quickFilter('Approved')">
+                                                                                                    Đã duyệt
+                                                                                                </button>
+                                                                                                <button type="button" class="btn ${currentStatus === 'Paid' ? 'btn-info' : 'btn-outline-info'}" onclick="quickFilter('Paid')">
+                                                                                                    Đã thanh toán
+                                                                                                </button>
+                                                                                            </div>
+                                                                                        `;
+
+            $('.card-header').first().append(quickFilters);
+        });
+    </script>
+}
+
+<!-- Statistics Modal -->
+<div class="modal fade" id="statisticsModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Thống kê chi tiết phiếu lương</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                @if (Model.PaySlips.Any())
+                {
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6>Thống kê theo trạng thái:</h6>
+                            <ul class="list-group">
+                                <li class="list-group-item d-flex justify-content-between">
+                                    <span>Đã tạo:</span>
+                                    <span class="badge bg-warning">@Model.PaySlips.Count(p => p.Status ==
+                                                                            "Generated")</span>
+                            </li>
+                            <li class="list-group-item d-flex justify-content-between">
+                                <span>Đã duyệt:</span>
+                                <span class="badge bg-success">@Model.PaySlips.Count(p => p.Status == "Approved")</span>
+                            </li>
+                            <li class="list-group-item d-flex justify-content-between">
+                                <span>Bị từ chối:</span>
+                                <span class="badge bg-danger">@Model.PaySlips.Count(p => p.Status == "Rejected")</span>
+                            </li>
+                            <li class="list-group-item d-flex justify-content-between">
+                                <span>Đã thanh toán:</span>
+                                <span class="badge bg-info">@Model.PaySlips.Count(p => p.Status == "Paid")</span>
+                            </li>
+                        </ul>
+                    </div>
+                    <div class="col-md-6">
+                        <h6>Thống kê tài chính:</h6>
+                        <ul class="list-group">
+                            <li class="list-group-item d-flex justify-content-between">
+                                <span>Tổng lương cơ bản:</span>
+                                <strong>@Model.PaySlips.Sum(p => p.BasicSalary).ToString("N0") VND</strong>
+                            </li>
+                            <li class="list-group-item d-flex justify-content-between">
+                                <span>Tổng thưởng:</span>
+                                <strong class="text-success">@Model.PaySlips.Sum(p => p.Bonus).ToString("N0")
+                                    VND</strong>
+                            </li>
+                            <li class="list-group-item d-flex justify-content-between">
+                                <span>Tổng khấu trừ:</span>
+                                <strong class="text-danger">@Model.PaySlips.Sum(p => p.Deduction).ToString("N0")
+                                    VND</strong>
+                            </li>
+                            <li class="list-group-item d-flex justify-content-between">
+                                <span>Tổng thực nhận:</span>
+                                <strong class="text-primary">@Model.PaySlips.Sum(p => p.NetSalary).ToString("N0")
+                                    VND</strong>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+                                }
+                else
+                {
+                    <p class="text-muted text-center">Không có dữ liệu để thống kê</p>
+                }
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
+            </div>
+        </div>
+    </div>
+</div>

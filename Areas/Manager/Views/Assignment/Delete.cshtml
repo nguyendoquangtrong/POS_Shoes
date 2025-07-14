@@ -1,0 +1,139 @@
+<!-- Areas/Manager/Views/Assignment/Delete.cshtml -->
+@model POS_Shoes.Models.Entities.Assignment
+@{
+    ViewData["Title"] = "Xóa Lịch Làm Việc";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h1 class="text-danger"><i class="fas fa-exclamation-triangle"></i> Xóa Lịch Làm Việc</h1>
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a asp-action="Index">Lịch Làm Việc</a></li>
+            <li class="breadcrumb-item active">Xóa</li>
+        </ol>
+    </nav>
+</div>
+
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="alert alert-danger" role="alert">
+            <i class="fas fa-exclamation-triangle"></i>
+            <strong>Cảnh báo!</strong> Bạn có chắc chắn muốn xóa lịch làm việc này? Hành động này không thể hoàn tác.
+        </div>
+
+        <div class="card border-danger">
+            <div class="card-header bg-danger text-white">
+                <h5 class="mb-0"><i class="fas fa-info-circle"></i> Thông Tin Lịch Làm Việc Sẽ Bị Xóa</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label class="form-label text-muted">
+                                <i class="fas fa-user"></i> Nhân Viên
+                            </label>
+                            <div class="fw-bold">@Model.User.Username</div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label class="form-label text-muted">
+                                <i class="fas fa-clock"></i> Ca Làm Việc
+                            </label>
+                            <div>
+                                <span class="badge bg-info fs-6">@Model.Shift</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-12">
+                        <div class="mb-3">
+                            <label class="form-label text-muted">
+                                <i class="fas fa-file-alt"></i> Mô Tả Công Việc
+                            </label>
+                            <div class="border rounded p-3 bg-light">
+                                @if (!string.IsNullOrEmpty(Model.Description))
+                                {
+                                    @Model.Description
+                                }
+                                else
+                                {
+                                    <em class="text-muted">Chưa có mô tả</em>
+                                }
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-4">
+                        <div class="mb-3">
+                            <label class="form-label text-muted">
+                                <i class="fas fa-calendar"></i> Ngày Làm Việc
+                            </label>
+                            <div class="fw-bold">@Model.Date.ToString("dd/MM/yyyy")</div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="mb-3">
+                            <label class="form-label text-muted">
+                                <i class="fas fa-play"></i> Giờ Bắt Đầu
+                            </label>
+                            <div class="fw-bold">@Model.StartTime.ToString("HH:mm")</div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="mb-3">
+                            <label class="form-label text-muted">
+                                <i class="fas fa-stop"></i> Giờ Kết Thúc
+                            </label>
+                            <div class="fw-bold">@Model.EndTime.ToString("HH:mm")</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card-footer">
+                <form asp-action="Delete" method="post" class="d-inline">
+                    <!-- Hidden field cho HTTP DELETE -->
+                    <input type="hidden" name="_method" value="DELETE" />
+                    <input type="hidden" asp-for="AssignmentID" />
+
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <a asp-action="Index" class="btn btn-secondary">
+                                <i class="fas fa-arrow-left"></i> Hủy Bỏ
+                            </a>
+                            <a asp-action="Details" asp-route-id="@Model.AssignmentID" class="btn btn-outline-info">
+                                <i class="fas fa-eye"></i> Xem Chi Tiết
+                            </a>
+                        </div>
+                        <div>
+                            <button type="submit" class="btn btn-danger"
+                                onclick="return confirm('Bạn có chắc chắn muốn xóa lịch làm việc này?')">
+                                <i class="fas fa-trash"></i> Xác Nhận Xóa
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <div class="mt-3">
+            <div class="card border-warning">
+                <div class="card-body">
+                    <h6 class="card-title text-warning">
+                        <i class="fas fa-lightbulb"></i> Lưu ý
+                    </h6>
+                    <ul class="mb-0">
+                        <li>Sau khi xóa, dữ liệu sẽ không thể khôi phục</li>
+                        <li>Nhân viên sẽ không còn lịch làm việc này</li>
+                        <li>Hãy đảm bảo đã thông báo cho nhân viên trước khi xóa</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

@@ -1,0 +1,226 @@
+@model POS_Shoes.Models.Entities.Product
+@{
+    ViewData["Title"] = "Xóa Sản Phẩm";
+    var totalQuantityFromSizes = Model.ProductSizes?.Sum(ps => ps.Quantity) ?? 0;
+}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h1 class="text-danger"><i class="fas fa-exclamation-triangle"></i> Xóa Sản Phẩm</h1>
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a asp-action="Index">Sản phẩm</a></li>
+            <li class="breadcrumb-item active">Xóa</li>
+        </ol>
+    </nav>
+</div>
+
+<div class="row justify-content-center">
+    <div class="col-md-10">
+        <div class="alert alert-danger" role="alert">
+            <i class="fas fa-exclamation-triangle"></i>
+            <strong>Cảnh báo nghiêm trọng!</strong> Bạn có chắc chắn muốn xóa sản phẩm này?
+            Hành động này sẽ xóa toàn bộ thông tin sản phẩm, kích cỡ và không thể hoàn tác.
+        </div>
+
+        <div class="card border-danger">
+            <div class="card-header bg-danger text-white">
+                <h5 class="mb-0"><i class="fas fa-info-circle"></i> Thông Tin Sản Phẩm Sẽ Bị Xóa</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-8">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label text-muted">
+                                        <i class="fas fa-tag"></i> Tên Sản Phẩm
+                                    </label>
+                                    <div class="fw-bold">@Model.ProductName</div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label text-muted">
+                                        <i class="fas fa-barcode"></i> Mã Vạch
+                                    </label>
+                                    <div><code>@Model.Barcode</code></div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    <label class="form-label text-muted">
+                                        <i class="fas fa-dollar-sign"></i> Giá Bán
+                                    </label>
+                                    <div class="fw-bold text-success">@Model.Price.ToString("C0")</div>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    <label class="form-label text-muted">
+                                        <i class="fas fa-boxes"></i> Tổng Số Lượng
+                                    </label>
+                                    <div class="fw-bold">@totalQuantityFromSizes</div>
+                                    <small class="text-muted">Từ @(Model.ProductSizes?.Count() ?? 0) kích cỡ</small>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    <label class="form-label text-muted">
+                                        <i class="fas fa-truck"></i> Nhà Cung Cấp
+                                    </label>
+                                    <div class="fw-bold">@Model.Supplier</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label text-muted">
+                                        <i class="fas fa-toggle-on"></i> Trạng Thái
+                                    </label>
+                                    <div>
+                                        @if (Model.Status == "active")
+                                        {
+                                            <span class="badge bg-success">Hoạt động</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge bg-secondary">Ngừng bán</span>
+                                        }
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label text-muted">
+                                        <i class="fas fa-percent"></i> Khuyến Mãi
+                                    </label>
+                                    <div>
+                                        @if (Model.Promotion != null)
+                                        {
+                                            <span class="badge bg-info">@Model.Promotion.Name</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="text-muted">Không có</span>
+                                        }
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-md-4">
+                        <div class="text-center">
+                            <label class="form-label text-muted">
+                                <i class="fas fa-image"></i> Hình Ảnh
+                            </label>
+                            @if (!string.IsNullOrEmpty(Model.Image))
+                            {
+                                <div>
+                                    <img src="@Model.Image" class="img-fluid rounded" alt="@Model.ProductName"
+                                        style="max-height: 200px;">
+                                </div>
+                            }
+                            else
+                            {
+                                <div class="border rounded p-4 bg-light">
+                                    <i class="fas fa-image fa-3x text-muted mb-2"></i>
+                                    <p class="text-muted mb-0">Chưa có hình ảnh</p>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                </div>
+
+                @if (Model.ProductSizes != null && Model.ProductSizes.Any())
+                {
+                    <div class="mt-4">
+                        <h6><i class="fas fa-ruler"></i> Kích Cỡ Sẽ Bị Xóa (@Model.ProductSizes.Count() kích cỡ)</h6>
+                        <div class="d-flex flex-wrap gap-2 mb-3">
+                            @foreach (var size in Model.ProductSizes)
+                            {
+                                <span class="badge bg-secondary">@size.Size (@size.Quantity)</span>
+                            }
+                        </div>
+
+                        <div class="alert alert-warning">
+                            <i class="fas fa-exclamation-triangle"></i>
+                            <strong>Tổng giá trị tồn kho sẽ bị mất:</strong>
+                            @((Model.Price * totalQuantityFromSizes).ToString("C0"))
+                        </div>
+                    </div>
+                }
+            </div>
+
+            <div class="card-footer">
+                <!-- Form sử dụng HTTP DELETE -->
+                <form asp-action="Delete" method="post" class="d-inline" id="deleteForm">
+                    <!-- Hidden field để mô phỏng HTTP DELETE -->
+                    <input type="hidden" name="_method" value="DELETE" />
+                    <input type="hidden" asp-for="ProductID" />
+
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <a asp-action="Index" class="btn btn-secondary">
+                                <i class="fas fa-arrow-left"></i> Hủy Bỏ
+                            </a>
+                            <a asp-action="Details" asp-route-id="@Model.ProductID" class="btn btn-outline-info">
+                                <i class="fas fa-eye"></i> Xem Chi Tiết
+                            </a>
+                        </div>
+                        <div>
+                            <button type="submit" class="btn btn-danger" id="deleteBtn">
+                                <i class="fas fa-trash"></i> Xác Nhận Xóa Sản Phẩm
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <div class="mt-3">
+            <div class="card border-warning">
+                <div class="card-body">
+                    <h6 class="card-title text-warning">
+                        <i class="fas fa-lightbulb"></i> Lưu ý quan trọng
+                    </h6>
+                    <ul class="mb-0">
+                        <li>Sản phẩm sẽ bị xóa hoàn toàn khỏi hệ thống</li>
+                        <li>Tất cả <strong>@(Model.ProductSizes?.Count() ?? 0) kích cỡ</strong> sẽ bị xóa</li>
+                        <li>Hình ảnh sản phẩm sẽ bị xóa khỏi server</li>
+                        <li>Dữ liệu không thể khôi phục sau khi xóa</li>
+                        <li>Các đơn hàng cũ có thể bị ảnh hưởng</li>
+                        <li><strong>Giá trị tồn kho mất đi:</strong> @((Model.Price *
+                                                        totalQuantityFromSizes).ToString("C0"))</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        document.getElementById('deleteForm').addEventListener('submit', function (e) {
+            e.preventDefault();
+
+            const productName = '@Html.Raw(Model.ProductName)';
+            const confirmMessage = `Bạn có chắc chắn muốn xóa sản phẩm "${productName}"?\n\nHành động này không thể hoàn tác!`;
+
+            if (confirm(confirmMessage)) {
+                // Show loading state
+                const deleteBtn = document.getElementById('deleteBtn');
+                deleteBtn.disabled = true;
+                deleteBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Đang xóa...';
+
+                // Submit form
+                this.submit();
+            }
+        });
+    </script>
+}

@@ -1,0 +1,208 @@
+<!-- Areas/Master/Views/PromotionApproval/Index.cshtml -->
+@using POS_Shoes.Models.Entities
+@model IEnumerable<Promotion>
+@{
+    ViewData["Title"] = "Duyệt khuyến mãi";
+    Layout = "~/Areas/Master/Views/Shared/_Layout.cshtml";
+}
+
+<div class="row">
+    <div class="col-md-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2><i class="fas fa-tags"></i> Duyệt khuyến mãi</h2>
+            <div class="d-flex gap-2">
+                <select id="statusFilter" class="form-select" onchange="filterByStatus()">
+                    <option value="">Tất cả trạng thái</option>
+                    <option value="Generated" selected="@(ViewBag.SelectedStatus == "Generated")">Chờ duyệt</option>
+                    <option value="Approved" selected="@(ViewBag.SelectedStatus == "Approved")">Đã duyệt</option>
+                    <option value="Rejected" selected="@(ViewBag.SelectedStatus == "Rejected")">Bị từ chối</option>
+                    <option value="Paid" selected="@(ViewBag.SelectedStatus == "Paid")">Đã thanh toán</option>
+                </select>
+
+                @if (ViewBag.PendingCount > 0)
+                {
+                    <span class="badge bg-warning fs-6">@ViewBag.PendingCount chờ duyệt</span>
+                }
+            </div>
+        </div>
+
+        <!-- Statistics Cards -->
+        <div class="row mb-4">
+            <div class="col-md-3">
+                <div class="card stats-card status-pending">
+                    <div class="card-body">
+                        <h4>@Model.Count(p => p.Status == "Spending")</h4>
+                        <p class="text-muted">Chờ duyệt</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card stats-card status-approved">
+                    <div class="card-body">
+                        <h4>@Model.Count(p => p.Status == "Approved")</h4>
+                        <p class="text-muted">Đang hoạt động</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card stats-card status-rejected">
+                    <div class="card-body">
+                        <h4>@Model.Count(p => p.Status == "Rejected")</h4>
+                        <p class="text-muted">Bị từ chối</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card stats-card" style="border-left-color: #6c757d !important;">
+                    <div class="card-body">
+                        <h4>@Model.Count(p => p.Status == "Expired")</h4>
+                        <p class="text-muted">Đã hết hạn</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        @if (Model.Any())
+        {
+            <!-- Promotions Table -->
+            <div class="card">
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Tên khuyến mãi</th>
+                                    <th>Loại</th>
+                                    <th>Giá trị</th>
+                                    <th>Thời gian</th>
+                                    <th>Trạng thái</th>
+                                    <th>Ngày tạo</th>
+                                    <th>Thao tác</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var promotion in Model)
+                                {
+                                    <tr>
+                                        <td>
+                                            <div>
+                                                <strong>@promotion.Name</strong><br>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <strong>@promotion.discount%</strong>
+                                        </td>
+                                        <td>
+                                            <div>
+                                                <small class="text-muted">Bắt đầu:</small>
+                                                @promotion.StartDate.ToString("dd/MM/yyyy")<br>
+                                                <small class="text-muted">Kết thúc:</small>
+                                                @promotion.EndDate.ToString("dd/MM/yyyy")
+                                            </div>
+                                        </td>
+                                        <td>
+                                            @switch (promotion.Status)
+                                            {
+                                                case "Spending":
+                                                    <span class="badge bg-warning">Chờ duyệt</span>
+                                                    break;
+                                                case "Approved":
+                                                    @if (promotion.IsActive)
+                                                    {
+                                                        <span class="badge bg-success">Đang hoạt động</span>
+                                                    }
+                                                    else
+                                                    {
+                                                        <span class="badge bg-secondary">Không hoạt động</span>
+                                                    }
+                                                    break;
+                                                case "Rejected":
+                                                    <span class="badge bg-danger">Bị từ chối</span>
+                                                    break;
+                                                case "Expired":
+                                                    <span class="badge bg-dark">Đã hết hạn</span>
+                                                    break;
+                                            }
+                                        </td>
+                                        <td>
+                                            @promotion.CreatedAt.ToString("dd/MM/yyyy HH:mm")
+                                        </td>
+                                        <td>
+                                            <div class="btn-group btn-group-sm">
+                                                <a href="/Master/PromotionApproval/Details/@promotion.PromotionID"
+                                                    class="btn btn-outline-primary">
+                                                    <i class="fas fa-eye"></i>
+                                                </a>
+                                                @if (promotion.Status == "Spending")
+                                                {
+                                                    <button class="btn btn-outline-success"
+                                                        onclick="quickApprove('@promotion.PromotionID')">
+                                                        <i class="fas fa-check"></i>
+                                                    </button>
+                                                }
+                                                @if (promotion.Status == "Approved" && promotion.IsActive)
+                                                {
+                                                    <button class="btn btn-outline-warning"
+                                                        onclick="expirePromotion('@promotion.PromotionID')">
+                                                        <i class="fas fa-clock"></i>
+                                                    </button>
+                                                }
+                                            </div>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        }
+        else
+        {
+            <div class="text-center py-5">
+                <i class="fas fa-tags fa-4x text-muted mb-3"></i>
+                <h5 class="text-muted">Không có khuyến mãi nào</h5>
+                <p class="text-muted">Chưa có khuyến mãi nào được tạo</p>
+            </div>
+        }
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        function filterByStatus() {
+            const status = document.getElementById('statusFilter').value;
+            window.location.href = `/Master/PromotionApproval?status=${status}`;
+        }
+
+        function quickApprove(promotionId) {
+            if (confirm('Bạn có chắc muốn duyệt khuyến mãi này?')) {
+                $.post('/Master/PromotionApproval/Approve', {
+                    id: promotionId,
+                    __RequestVerificationToken: $('input[name="__RequestVerificationToken"]').val()
+                })
+                    .done(function () {
+                        location.reload();
+                    })
+                    .fail(function () {
+                        alert('Có lỗi xảy ra khi duyệt khuyến mãi');
+                    });
+            }
+        }
+
+        function expirePromotion(promotionId) {
+            if (confirm('Đánh dấu khuyến mãi này đã hết hạn?')) {
+                $.post('/Master/PromotionApproval/Expire', {
+                    id: promotionId,
+                    __RequestVerificationToken: $('input[name="__RequestVerificationToken"]').val()
+                })
+                    .done(function () {
+                        location.reload();
+                    })
+                    .fail(function () {
+                        alert('Có lỗi xảy ra');
+                    });
+            }
+        }
+    </script>
+}

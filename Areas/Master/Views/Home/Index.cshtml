@@ -1,0 +1,195 @@
+<!-- Areas/Master/Views/Home/Index.cshtml -->
+@{
+    ViewData["Title"] = "Master Dashboard";
+}
+
+<div class="row mt-4">
+    <div class="col-md-12">
+        <h2><i class="fas fa-crown text-warning"></i> Master Dashboard</h2>
+        <p class="lead">Trung tâm phê duyệt tất cả các yêu cầu trong hệ thống</p>
+    </div>
+</div>
+
+<!-- Pending Approvals Cards -->
+<div class="row mt-4">
+    <div class="col-md-3">
+        <div class="card bg-warning text-dark stats-card">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h3>@ViewBag.PendingPaySlips</h3>
+                        <p>Phiếu lương chờ duyệt</p>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="fas fa-money-bill-wave fa-2x"></i>
+                    </div>
+                </div>
+                <a href="/Master/PaySlipApproval/Index?status=Generated" class="btn btn-dark btn-sm mt-2">
+                    <i class="fas fa-eye"></i> Xem ngay
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-3">
+        <div class="card bg-info text-white stats-card">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h3>@ViewBag.PendingMonthlyReports</h3>
+                        <p>Báo cáo tháng chờ duyệt</p>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="fas fa-file-chart-column fa-2x"></i>
+                    </div>
+                </div>
+                <a href="/Master/ReportApproval/Index?status=Generated" class="btn btn-light btn-sm mt-2">
+                    <i class="fas fa-eye"></i> Xem ngay
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-3">
+        <div class="card bg-primary text-white stats-card">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h3>@ViewBag.PendingPromotions</h3>
+                        <p>Khuyến mãi chờ duyệt</p>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="fas fa-tags fa-2x"></i>
+                    </div>
+                </div>
+                <a href="/Master/PromotionApproval/Index?status=Spending" class="btn btn-light btn-sm mt-2">
+                    <i class="fas fa-eye"></i> Xem ngay
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-3">
+        <div class="card bg-danger text-white stats-card">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h3>@ViewBag.PendingReturnReceipts</h3>
+                        <p>Phiếu trả hàng chờ duyệt</p>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="fas fa-undo fa-2x"></i>
+                    </div>
+                </div>
+                <a href="/Master/ReturnReceiptApproval/Index?status=Progressing" class="btn btn-light btn-sm mt-2">
+                    <i class="fas fa-eye"></i> Xem ngay
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Approved This Month Stats -->
+<div class="row mt-4">
+    <div class="col-md-12">
+        <h5><i class="fas fa-check-circle text-success"></i> Thống kê đã duyệt tháng này</h5>
+    </div>
+</div>
+
+<div class="row mt-2">
+    <div class="col-md-3">
+        <div class="card border-success">
+            <div class="card-body text-center">
+                <h4 class="text-success">@ViewBag.ApprovedPaySlipsThisMonth</h4>
+                <p class="text-muted">Phiếu lương đã duyệt</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-3">
+        <div class="card border-info">
+            <div class="card-body text-center">
+                <h4 class="text-info">@ViewBag.ApprovedReportsThisMonth</h4>
+                <p class="text-muted">Báo cáo tháng đã duyệt</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-3">
+        <div class="card border-primary">
+            <div class="card-body text-center">
+                <h4 class="text-primary">@ViewBag.ApprovedPromotionsThisMonth</h4>
+                <p class="text-muted">Khuyến mãi đã duyệt</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-3">
+        <div class="card border-warning">
+            <div class="card-body text-center">
+                <h4 class="text-warning">@ViewBag.ApprovedReturnReceiptsThisMonth</h4>
+                <p class="text-muted">Phiếu trả đã duyệt</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Quick Actions -->
+<div class="row mt-4">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-lightning-bolt"></i> Truy cập nhanh</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-3">
+                        <a href="/Master/PaySlipApproval/Index?status=Generated"
+                            class="btn btn-warning btn-lg w-100 mb-3">
+                            <i class="fas fa-money-bill-wave fa-2x d-block mb-2"></i>
+                            Duyệt phiếu lương
+                            <span class="badge bg-dark">@ViewBag.PendingPaySlips</span>
+                        </a>
+                    </div>
+                    <div class="col-md-3">
+                        <a href="/Master/ReportApproval/Index?status=Generated" class="btn btn-info btn-lg w-100 mb-3">
+                            <i class="fas fa-file-chart-column fa-2x d-block mb-2"></i>
+                            Duyệt báo cáo tháng
+                            <span class="badge bg-light text-dark">@ViewBag.PendingMonthlyReports</span>
+                        </a>
+                    </div>
+                    <div class="col-md-3">
+                        <a href="/Master/PromotionApproval/Index?status=Spending"
+                            class="btn btn-primary btn-lg w-100 mb-3">
+                            <i class="fas fa-tags fa-2x d-block mb-2"></i>
+                            Duyệt khuyến mãi
+                            <span class="badge bg-light text-dark">@ViewBag.PendingPromotions</span>
+                        </a>
+                    </div>
+                    <div class="col-md-3">
+                        <a href="/Master/ReturnReceiptApproval/Index?status=Progressing"
+                            class="btn btn-danger btn-lg w-100 mb-3">
+                            <i class="fas fa-undo fa-2x d-block mb-2"></i>
+                            Duyệt phiếu trả hàng
+                            <span class="badge bg-light text-dark">@ViewBag.PendingReturnReceipts</span>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- System Info -->
+<div class="row mt-4">
+    <div class="col-md-12">
+        <div class="alert alert-info">
+            <h6><i class="fas fa-info-circle"></i> Thông tin hệ thống</h6>
+            <p class="mb-0">
+                <strong>Master Admin</strong> có quyền phê duyệt tất cả các yêu cầu trong hệ thống bao gồm:
+                phiếu lương, báo cáo doanh thu tháng, khuyến mãi và phiếu trả hàng.
+                Hãy xem xét cẩn thận trước khi phê duyệt.
+            </p>
+        </div>
+    </div>
+</div>

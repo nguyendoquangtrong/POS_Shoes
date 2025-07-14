@@ -1,0 +1,185 @@
+<!-- Areas/Manager/Views/Assignment/Details.cshtml -->
+@model POS_Shoes.Models.Entities.Assignment
+@{
+    ViewData["Title"] = "Chi Tiết Lịch Làm Việc";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h1><i class="fas fa-info-circle"></i> Chi Tiết Lịch Làm Việc</h1>
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a asp-action="Index">Lịch Làm Việc</a></li>
+            <li class="breadcrumb-item active">Chi Tiết</li>
+        </ol>
+    </nav>
+</div>
+
+<div class="row">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0"><i class="fas fa-calendar-check"></i> Thông Tin Lịch Làm Việc</h5>
+                <div>
+                    @{
+                        var statusClass = Model.Date >= DateOnly.FromDateTime(DateTime.Today) ? "success" : "secondary";
+                        var statusText = Model.Date >= DateOnly.FromDateTime(DateTime.Today) ? "Sắp tới" : "Đã qua";
+                    }
+                    <span class="badge bg-@statusClass">@statusText</span>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label class="form-label text-muted">
+                                <i class="fas fa-user"></i> Nhân Viên
+                            </label>
+                            <div class="fw-bold">@Model.User.Username</div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label class="form-label text-muted">
+                                <i class="fas fa-clock"></i> Ca Làm Việc
+                            </label>
+                            <div>
+                                <span class="badge bg-info fs-6">@Model.Shift</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-12">
+                        <div class="mb-3">
+                            <label class="form-label text-muted">
+                                <i class="fas fa-file-alt"></i> Mô Tả Công Việc
+                            </label>
+                            <div class="border rounded p-3 bg-light">
+                                @if (!string.IsNullOrEmpty(Model.Description))
+                                {
+                                    @Model.Description
+                                }
+                                else
+                                {
+                                    <em class="text-muted">Chưa có mô tả</em>
+                                }
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-4">
+                        <div class="mb-3">
+                            <label class="form-label text-muted">
+                                <i class="fas fa-calendar"></i> Ngày Làm Việc
+                            </label>
+                            <div class="fw-bold">@Model.Date.ToString("dddd, dd/MM/yyyy")</div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="mb-3">
+                            <label class="form-label text-muted">
+                                <i class="fas fa-play"></i> Giờ Bắt Đầu
+                            </label>
+                            <div class="fw-bold text-success">@Model.StartTime.ToString("HH:mm")</div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="mb-3">
+                            <label class="form-label text-muted">
+                                <i class="fas fa-stop"></i> Giờ Kết Thúc
+                            </label>
+                            <div class="fw-bold text-danger">@Model.EndTime.ToString("HH:mm")</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-12">
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle"></i>
+                            <strong>Thời gian làm việc:</strong>
+                            @{
+                                var workDuration = Model.EndTime - Model.StartTime;
+                                if (workDuration.TotalHours < 0)
+                                {
+                                    workDuration = workDuration.Add(TimeSpan.FromHours(24));
+                                }
+                            }
+                            @workDuration.Hours giờ @workDuration.Minutes phút
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card-footer d-flex justify-content-between">
+                <div>
+                    <a asp-action="Index" class="btn btn-secondary">
+                        <i class="fas fa-arrow-left"></i> Quay Lại Danh Sách
+                    </a>
+                </div>
+                <div>
+                    <a asp-action="Edit" asp-route-id="@Model.AssignmentID" class="btn btn-primary">
+                        <i class="fas fa-edit"></i> Chỉnh Sửa
+                    </a>
+                    <a asp-action="Delete" asp-route-id="@Model.AssignmentID" class="btn btn-outline-danger">
+                        <i class="fas fa-trash"></i> Xóa
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header">
+                <h6 class="mb-0"><i class="fas fa-chart-bar"></i> Thống Kê</h6>
+            </div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <small class="text-muted">ID Lịch Làm Việc</small>
+                    <div class="font-monospace small">@Model.AssignmentID</div>
+                </div>
+                <div class="mb-3">
+                    <small class="text-muted">Trạng Thái</small>
+                    <div>
+                        @if (Model.Date == DateOnly.FromDateTime(DateTime.Today))
+                        {
+                            <span class="badge bg-warning">Hôm nay</span>
+                        }
+                        else if (Model.Date > DateOnly.FromDateTime(DateTime.Today))
+                        {
+                            <span class="badge bg-success">Sắp tới</span>
+                        }
+                        else
+                        {
+                            <span class="badge bg-secondary">Đã qua</span>
+                        }
+                    </div>
+                </div>
+                <div class="mb-3">
+                    <small class="text-muted">Còn lại</small>
+                    <div>
+                        @{
+                            var daysLeft = (Model.Date.ToDateTime(TimeOnly.MinValue) - DateTime.Today).Days;
+                        }
+                        @if (daysLeft > 0)
+                        {
+                            <span class="text-primary">@daysLeft ngày</span>
+                        }
+                        else if (daysLeft == 0)
+                        {
+                            <span class="text-warning">Hôm nay</span>
+                        }
+                        else
+                        {
+                            <span class="text-muted">Đã qua @Math.Abs(daysLeft) ngày</span>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

@@ -1,0 +1,218 @@
+@using POS_Shoes.Models.ViewModels
+<!-- Areas/Saler/Views/Report/DailyRevenueReport.cshtml -->
+@model DailyRevenueReportViewModel
+@{
+    ViewData["Title"] = "Báo cáo doanh thu ngày";
+    Layout = "~/Areas/Saler/Views/Shared/_Layout.cshtml";
+    var report = ViewBag.Report as Report;
+}
+
+<div class="row" id="reportContent">
+    <div class="col-md-12">
+        <!-- Header -->
+        <div class="card mb-4">
+            <div class="card-body text-center">
+                <h2>BÁO CÁO DOANH THU NGÀY</h2>
+                <h4>@Model.ReportDate.ToString("dd/MM/yyyy")</h4>
+                <p class="text-muted">Nhân viên: @report.User.Username</p>
+                <p class="text-muted">Tạo lúc: @report.CreatedAt.ToString("dd/MM/yyyy HH:mm")</p>
+            </div>
+        </div>
+
+        <!-- Tóm tắt tổng quan -->
+        <div class="row mb-4">
+            <div class="col-md-4">
+                <div class="card bg-success text-white">
+                    <div class="card-body">
+                        <h3>@Model.TotalRevenue.ToString("N0") VND</h3>
+                        <p>Tổng doanh thu</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card bg-primary text-white">
+                    <div class="card-body">
+                        <h3>@Model.TotalOrders</h3>
+                        <p>Tổng đơn hàng</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card bg-info text-white">
+                    <div class="card-body">
+                        <h3>@Model.AverageOrderValue.ToString("N0") VND</h3>
+                        <p>Giá trị đơn hàng trung bình</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Thống kê khách hàng -->
+        <div class="row mb-4">
+            <div class="col-md-4">
+                <div class="card">
+                    <div class="card-body text-center">
+                        <h4>@Model.MemberOrders</h4>
+                        <p>Đơn hàng thành viên</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card">
+                    <div class="card-body text-center">
+                        <h4>@Model.GuestOrders</h4>
+                        <p>Đơn hàng khách lẻ</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card">
+                    <div class="card-body text-center">
+                        <h4>@Model.CashOrders</h4>
+                        <p>Thanh toán tiền mặt</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Doanh thu theo sản phẩm -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5><i class="fas fa-boxes"></i> Doanh thu theo sản phẩm</h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>Sản phẩm</th>
+                                <th>Số lượng bán</th>
+                                <th>Doanh thu</th>
+                                <th>Tỷ lệ</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var item in Model.ProductRevenues)
+                            {
+                                <tr>
+                                    <td>@item.ProductName</td>
+                                    <td>@item.QuantitySold</td>
+                                    <td>@item.Revenue.ToString("N0") VND</td>
+                                    <td>
+                                        <div class="progress">
+                                            <div class="progress-bar" style="width: @(item.Percentage)%">
+                                                @item.Percentage.ToString("F1")%
+                                            </div>
+                                        </div>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Khách hàng mua nhiều nhất -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5><i class="fas fa-users"></i> Top khách hàng mua nhiều nhất</h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>Khách hàng</th>
+                                <th>Số điện thoại</th>
+                                <th>Số đơn hàng</th>
+                                <th>Tổng chi tiêu</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var customer in Model.CustomerRevenues)
+                            {
+                                <tr>
+                                    <td>@customer.CustomerName</td>
+                                    <td>@customer.CustomerPhone</td>
+                                    <td>@customer.OrderCount</td>
+                                    <td>@customer.TotalSpent.ToString("N0") VND</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Doanh thu theo giờ -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5><i class="fas fa-clock"></i> Doanh thu theo giờ</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    @foreach (var hourData in Model.HourlyRevenues)
+                    {
+                        <div class="col-md-3 mb-3">
+                            <div class="card">
+                                <div class="card-body text-center">
+                                    <h6>@hourData.Hour:00 - @(hourData.Hour + 1):00</h6>
+                                    <p class="mb-1">@hourData.OrderCount đơn hàng</p>
+                                    <h5>@hourData.Revenue.ToString("N0") VND</h5>
+                                </div>
+                            </div>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+
+        <!-- Ghi chú -->
+        @if (!string.IsNullOrEmpty(Model.Description))
+        {
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5><i class="fas fa-sticky-note"></i> Ghi chú</h5>
+                </div>
+                <div class="card-body">
+                    <p>@Model.Description</p>
+                </div>
+            </div>
+        }
+    </div>
+</div>
+
+<!-- Action Buttons -->
+<div class="row mt-4">
+    <div class="col-md-12 text-center">
+        <button onclick="printReport()" class="btn btn-primary">
+            <i class="fas fa-print"></i> In báo cáo
+        </button>
+        <a href="/Saler/Report/ExportPDF/@report.ReportID" class="btn btn-success">
+            <i class="fas fa-file-pdf"></i> Xuất PDF
+        </a>
+        <a href="/Saler/Report/Index" class="btn btn-secondary">
+            <i class="fas fa-arrow-left"></i> Quay lại
+        </a>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        function printReport() {
+            const printContent = document.getElementById('reportContent').innerHTML;
+            const originalContent = document.body.innerHTML;
+
+            document.body.innerHTML = `
+                        <div style="padding: 20px; font-family: Arial, sans-serif;">
+                            ${printContent}
+                        </div>
+                    `;
+
+            window.print();
+            document.body.innerHTML = originalContent;
+            location.reload();
+        }
+    </script>
+}
