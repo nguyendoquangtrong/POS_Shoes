@@ -233,3 +233,4 @@
 /Volumes/SSD/Study_Space/CNPM/POS_Shoes/obj/Debug/net9.0/POS_Shoes.pdb
 /Volumes/SSD/Study_Space/CNPM/POS_Shoes/obj/Debug/net9.0/POS_Shoes.genruntimeconfig.cache
 /Volumes/SSD/Study_Space/CNPM/POS_Shoes/obj/Debug/net9.0/ref/POS_Shoes.dll
+/Volumes/SSD/Study_Space/CNPM/POS_Shoes/obj/Debug/net9.0/POS_Shoes.sourcelink.json
