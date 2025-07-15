@@ -1,4 +1,3 @@
-// Areas/Master/Controllers/PromotionApprovalController.cs
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using POS_Shoes.Models.Data;
@@ -29,27 +28,20 @@ namespace POS_Shoes.Areas.Master.Controllers
                 .ToListAsync();
 
             ViewBag.SelectedStatus = status;
-            ViewBag.PendingCount = await _context.Promotions.CountAsync(p => p.Status == "Generated");
+            ViewBag.PendingCount = await _context.Promotions.CountAsync(p => p.Status == "Pending");
             ViewBag.TotalPromotions = promotions.Count;
+            ViewBag.ApprovedCount = await _context.Promotions.CountAsync(p => p.Status == "Approved");
+            ViewBag.RejectedCount = await _context.Promotions.CountAsync(p => p.Status == "Rejected");
 
             return View(promotions);
-        }
-
-        // GET: Master/PromotionApproval/PendingPromotions
-        public async Task<IActionResult> PendingPromotions()
-        {
-            var pendingPromotions = await _context.Promotions
-                .Where(p => p.Status == "Generated")
-                .OrderByDescending(p => p.CreatedAt)
-                .ToListAsync();
-
-            return View(pendingPromotions);
         }
 
         // GET: Master/PromotionApproval/Details/5
         public async Task<IActionResult> Details(Guid id)
         {
             var promotion = await _context.Promotions
+                .Include(p => p.PromotionDetails)
+                    .ThenInclude(pd => pd.Product)
                 .FirstOrDefaultAsync(p => p.PromotionID == id);
 
             if (promotion == null)
@@ -61,7 +53,7 @@ namespace POS_Shoes.Areas.Master.Controllers
             return View(promotion);
         }
 
-        // POST: Master/PromotionApproval/Approve
+        // POST: Master/PromotionApproval/Approve - ✅ CHÍNH SỬA
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Approve(Guid id, string approvalNote = "")
@@ -69,23 +61,22 @@ namespace POS_Shoes.Areas.Master.Controllers
             var promotion = await _context.Promotions.FindAsync(id);
             if (promotion == null)
             {
-                TempData["ErrorMessage"] = "Không tìm thấy khuyến mãi!";
-                return RedirectToAction("Index");
+                return Json(new { success = false, message = "Không tìm thấy khuyến mãi!" });
             }
 
-            if (promotion.Status != "Generated")
+            // Kiểm tra trạng thái hiện tại
+            if (promotion.Status == "Approved")
             {
-                TempData["ErrorMessage"] = "Khuyến mãi này đã được xử lý trước đó!";
-                return RedirectToAction("Details", new { id });
+                return Json(new { success = false, message = "Khuyến mãi đã được duyệt trước đó!" });
             }
 
             // Kiểm tra thời gian hợp lệ
             if (promotion.EndDate <= DateTime.Now)
             {
-                TempData["ErrorMessage"] = "Không thể duyệt khuyến mãi đã hết hạn!";
-                return RedirectToAction("Details", new { id });
+                return Json(new { success = false, message = "Không thể duyệt khuyến mãi đã hết hạn!" });
             }
 
+            // ✅ CẬP NHẬT TRẠNG THÁI THÀNH "Approved"
             promotion.Status = "Approved";
             promotion.IsActive = true;
 
@@ -93,8 +84,13 @@ namespace POS_Shoes.Areas.Master.Controllers
 
             _logger.LogInformation($"Promotion {id} approved by Master {User.Identity.Name}");
 
-            TempData["SuccessMessage"] = "Khuyến mãi đã được duyệt và kích hoạt thành công!";
-            return RedirectToAction("Details", new { id });
+            return Json(new
+            {
+                success = true,
+                message = "Khuyến mãi đã được duyệt thành công!",
+                newStatus = "Approved",
+                isActive = true
+            });
         }
 
         // POST: Master/PromotionApproval/Reject
@@ -104,23 +100,21 @@ namespace POS_Shoes.Areas.Master.Controllers
         {
             if (string.IsNullOrWhiteSpace(rejectionReason))
             {
-                TempData["ErrorMessage"] = "Vui lòng nhập lý do từ chối!";
-                return RedirectToAction("Details", new { id });
+                return Json(new { success = false, message = "Vui lòng nhập lý do từ chối!" });
             }
 
             var promotion = await _context.Promotions.FindAsync(id);
             if (promotion == null)
             {
-                TempData["ErrorMessage"] = "Không tìm thấy khuyến mãi!";
-                return RedirectToAction("Index");
+                return Json(new { success = false, message = "Không tìm thấy khuyến mãi!" });
             }
 
-            if (promotion.Status != "Generated")
+            if (promotion.Status == "Rejected")
             {
-                TempData["ErrorMessage"] = "Khuyến mãi này đã được xử lý trước đó!";
-                return RedirectToAction("Details", new { id });
+                return Json(new { success = false, message = "Khuyến mãi đã bị từ chối trước đó!" });
             }
 
+            // ✅ CẬP NHẬT TRẠNG THÁI THÀNH "Rejected"
             promotion.Status = "Rejected";
             promotion.IsActive = false;
 
@@ -128,8 +122,13 @@ namespace POS_Shoes.Areas.Master.Controllers
 
             _logger.LogInformation($"Promotion {id} rejected by Master {User.Identity.Name}: {rejectionReason}");
 
-            TempData["SuccessMessage"] = "Khuyến mãi đã bị từ chối!";
-            return RedirectToAction("Details", new { id });
+            return Json(new
+            {
+                success = true,
+                message = "Khuyến mãi đã bị từ chối!",
+                newStatus = "Rejected",
+                isActive = false
+            });
         }
 
         // POST: Master/PromotionApproval/Expire
@@ -140,16 +139,15 @@ namespace POS_Shoes.Areas.Master.Controllers
             var promotion = await _context.Promotions.FindAsync(id);
             if (promotion == null)
             {
-                TempData["ErrorMessage"] = "Không tìm thấy khuyến mãi!";
-                return RedirectToAction("Index");
+                return Json(new { success = false, message = "Không tìm thấy khuyến mãi!" });
             }
 
             if (promotion.Status != "Approved")
             {
-                TempData["ErrorMessage"] = "Chỉ có thể đánh dấu hết hạn cho khuyến mãi đã được duyệt!";
-                return RedirectToAction("Details", new { id });
+                return Json(new { success = false, message = "Chỉ có thể đánh dấu hết hạn cho khuyến mãi đã được duyệt!" });
             }
 
+            // ✅ CẬP NHẬT TRẠNG THÁI THÀNH "Expired"
             promotion.Status = "Expired";
             promotion.IsActive = false;
             promotion.EndDate = DateTime.Now;
@@ -158,8 +156,13 @@ namespace POS_Shoes.Areas.Master.Controllers
 
             _logger.LogInformation($"Promotion {id} expired by Master {User.Identity.Name}");
 
-            TempData["SuccessMessage"] = "Khuyến mãi đã được đánh dấu hết hạn!";
-            return RedirectToAction("Details", new { id });
+            return Json(new
+            {
+                success = true,
+                message = "Khuyến mãi đã được đánh dấu hết hạn!",
+                newStatus = "Expired",
+                isActive = false
+            });
         }
 
         // POST: Master/PromotionApproval/ApproveMultiple
@@ -169,12 +172,11 @@ namespace POS_Shoes.Areas.Master.Controllers
         {
             if (promotionIds == null || !promotionIds.Any())
             {
-                TempData["ErrorMessage"] = "Không có khuyến mãi nào được chọn!";
-                return RedirectToAction("PendingPromotions");
+                return Json(new { success = false, message = "Không có khuyến mãi nào được chọn!" });
             }
 
             var promotions = await _context.Promotions
-                .Where(p => promotionIds.Contains(p.PromotionID) && p.Status == "Generated")
+                .Where(p => promotionIds.Contains(p.PromotionID) && p.Status == "Pending")
                 .ToListAsync();
 
             var successCount = 0;
@@ -184,6 +186,7 @@ namespace POS_Shoes.Areas.Master.Controllers
             {
                 if (promotion.EndDate > DateTime.Now)
                 {
+                    // ✅ CẬP NHẬT TRẠNG THÁI THÀNH "Approved"
                     promotion.Status = "Approved";
                     promotion.IsActive = true;
                     successCount++;
@@ -196,17 +199,23 @@ namespace POS_Shoes.Areas.Master.Controllers
 
             await _context.SaveChangesAsync();
 
+            var message = "";
             if (successCount > 0)
             {
-                TempData["SuccessMessage"] = $"Đã duyệt {successCount} khuyến mãi thành công!";
+                message += $"Đã duyệt {successCount} khuyến mãi thành công!";
             }
-
             if (errorCount > 0)
             {
-                TempData["ErrorMessage"] = $"{errorCount} khuyến mãi không thể duyệt do đã hết hạn!";
+                message += $" {errorCount} khuyến mãi không thể duyệt do đã hết hạn!";
             }
 
-            return RedirectToAction("PendingPromotions");
+            return Json(new
+            {
+                success = true,
+                message = message,
+                successCount = successCount,
+                errorCount = errorCount
+            });
         }
 
         // API: Get promotion statistics
@@ -219,7 +228,7 @@ namespace POS_Shoes.Areas.Master.Controllers
             var stats = new
             {
                 TodayPending = await _context.Promotions
-                    .CountAsync(p => p.Status == "Generated" && p.CreatedAt.Date == today),
+                    .CountAsync(p => p.Status == "Pending" && p.CreatedAt.Date == today),
                 TotalApproved = await _context.Promotions
                     .CountAsync(p => p.Status == "Approved"),
                 ActivePromotions = await _context.Promotions

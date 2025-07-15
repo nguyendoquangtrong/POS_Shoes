@@ -2,6 +2,9 @@
 @{
     ViewData["Title"] = "Xóa Sản Phẩm";
     var totalQuantityFromSizes = Model.ProductSizes?.Sum(ps => ps.Quantity) ?? 0;
+    // ✅ Lấy promotion data từ ViewBag
+    var promotionDetail = ViewBag.PromotionDetail as PromotionDetails;
+    var promotion = promotionDetail?.Promotion;
 }
 
 <div class="d-flex justify-content-between align-items-center mb-3">
@@ -83,7 +86,7 @@
                                         <i class="fas fa-toggle-on"></i> Trạng Thái
                                     </label>
                                     <div>
-                                        @if (Model.Status == "active")
+                                        @if (Model.Status == "Active")
                                         {
                                             <span class="badge bg-success">Hoạt động</span>
                                         }
@@ -100,9 +103,21 @@
                                         <i class="fas fa-percent"></i> Khuyến Mãi
                                     </label>
                                     <div>
-                                        @if (Model.Promotion != null)
+                                        <!-- ✅ Đã sửa: Sử dụng promotion từ PromotionDetails -->
+                                        @if (promotion != null)
                                         {
-                                            <span class="badge bg-info">@Model.Promotion.Name</span>
+                                            <span class="badge bg-info">
+                                                @promotion.Name
+                                                @if (promotion.discount > 0)
+                                                {
+                                                    <span class="ms-1">(-@promotion.discount%)</span>
+                                                }
+                                            </span>
+                                            <br>
+                                            <small class="text-muted">
+                                                @promotion.StartDate.ToString("dd/MM/yyyy") -
+                                                @promotion.EndDate.ToString("dd/MM/yyyy")
+                                            </small>
                                         }
                                         else
                                         {
@@ -155,13 +170,27 @@
                         </div>
                     </div>
                 }
+
+                <!-- ✅ Thêm thông tin về promotion sẽ bị xóa -->
+                @if (promotion != null)
+                {
+                    <div class="mt-4">
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle"></i>
+                            <strong>Thông tin khuyến mãi sẽ bị xóa:</strong>
+                            <br>
+                            <strong>@promotion.Name</strong> - Giảm @promotion.discount%
+                            <br>
+                            <small>Áp dụng từ @promotion.StartDate.ToString("dd/MM/yyyy") đến
+                                @promotion.EndDate.ToString("dd/MM/yyyy")</small>
+                        </div>
+                    </div>
+                }
             </div>
 
             <div class="card-footer">
-                <!-- Form sử dụng HTTP DELETE -->
+                <!-- Form sử dụng HTTP POST với ActionName Delete -->
                 <form asp-action="Delete" method="post" class="d-inline" id="deleteForm">
-                    <!-- Hidden field để mô phỏng HTTP DELETE -->
-                    <input type="hidden" name="_method" value="DELETE" />
                     <input type="hidden" asp-for="ProductID" />
 
                     <div class="d-flex justify-content-between align-items-center">
@@ -193,6 +222,10 @@
                         <li>Sản phẩm sẽ bị xóa hoàn toàn khỏi hệ thống</li>
                         <li>Tất cả <strong>@(Model.ProductSizes?.Count() ?? 0) kích cỡ</strong> sẽ bị xóa</li>
                         <li>Hình ảnh sản phẩm sẽ bị xóa khỏi server</li>
+                        @if (promotion != null)
+                        {
+                            <li><strong>Liên kết khuyến mãi "@promotion.Name"</strong> sẽ bị xóa</li>
+                        }
                         <li>Dữ liệu không thể khôi phục sau khi xóa</li>
                         <li>Các đơn hàng cũ có thể bị ảnh hưởng</li>
                         <li><strong>Giá trị tồn kho mất đi:</strong> @((Model.Price *
@@ -210,9 +243,17 @@
             e.preventDefault();
 
             const productName = '@Html.Raw(Model.ProductName)';
-            const confirmMessage = `Bạn có chắc chắn muốn xóa sản phẩm "${productName}"?\n\nHành động này không thể hoàn tác!`;
+            let confirmMessage = `Bạn có chắc chắn muốn xóa sản phẩm "${productName}"?\n\nHành động này không thể hoàn tác!`;
 
-            if (confirm(confirmMessage)) {
+            // ✅ Thêm thông báo về promotion nếu có
+            @if (promotion != null)
+                {
+                    <text>
+                        confirmMessage += '\n\nSản phẩm này đang có khuyến mãi "@promotion.Name" sẽ bị xóa cùng!';
+                    </text>
+            }
+
+                if (confirm(confirmMessage)) {
                 // Show loading state
                 const deleteBtn = document.getElementById('deleteBtn');
                 deleteBtn.disabled = true;

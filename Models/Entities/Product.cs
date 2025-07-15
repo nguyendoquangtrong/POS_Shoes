@@ -16,11 +16,6 @@ namespace POS_Shoes.Models.Entities
         public string Supplier { get; set; }
         public string Status { get; set; }
 
-
-        [ForeignKey("PromotionID")]
-        public Guid? PromotionID { get; set; }
-        public Promotion? Promotion { get; set; }
-
         public ICollection<ProductSize>? ProductSizes { get; set; }
 
         [NotMapped]

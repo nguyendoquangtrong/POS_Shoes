@@ -23,6 +23,7 @@ namespace POS_Shoes.Models.Data
         public DbSet<Product> Products { get; set; }
         public DbSet<ProductSize> ProductSizes { get; set; }
         public DbSet<Promotion> Promotions { get; set; }
+        public DbSet<PromotionDetails> PromotionDetails { get; set; }
         public DbSet<Report> Reports { get; set; }
         public DbSet<ReturnReceipt> ReturnReceipts { get; set; }
         public DbSet<User> Users { get; set; }

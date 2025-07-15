@@ -1,4 +1,3 @@
-<!-- Areas/Master/Views/PromotionApproval/Details.cshtml -->
 @model Promotion
 @{
     ViewData["Title"] = "Chi tiết khuyến mãi";
@@ -11,7 +10,7 @@
                 <h5><i class="fas fa-tags"></i> Chi tiết khuyến mãi</h5>
                 @switch (Model.Status)
                 {
-                    case "Generated":
+                    case "Spending":
                         <span class="badge bg-warning fs-6">Chờ duyệt</span>
                         break;
                     case "Approved":
@@ -122,11 +121,10 @@
                                     <strong>Ngày tạo:</strong> @Model.CreatedAt.ToString("dd/MM/yyyy HH:mm")
                                 </div>
                                 <div class="col-md-6">
-                                    @if (Model.Status != "Generated")
+                                    @if (Model.Status != "Spending")
                                     {
                                         <i class="fas fa-edit text-info"></i>
                                         <strong>Cập nhật cuối:</strong>
-
                                         @(DateTime.Now.ToString("dd/MM/yyyy HH:mm"))
                                     }
                                 </div>
@@ -135,39 +133,85 @@
                     </div>
                 </div>
 
-                <!-- Applied Products (if any) -->
+                <!-- Applied Products - CẬP NHẬT -->
                 <div class="row">
                     <div class="col-md-12">
                         <h6 class="text-muted mb-3">Sản phẩm áp dụng</h6>
-                        @if (Model.Products != null && Model.Products.Any())
+                        @if (Model.PromotionDetails != null && Model.PromotionDetails.Any())
                         {
                             <div class="table-responsive">
                                 <table class="table table-sm">
                                     <thead>
                                         <tr>
+                                            <th>Hình ảnh</th>
                                             <th>Tên sản phẩm</th>
                                             <th>Giá gốc</th>
                                             <th>Giá sau giảm</th>
+                                            <th>Tiết kiệm</th>
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        @foreach (var product in Model.Products)
+                                        @foreach (var detail in Model.PromotionDetails)
                                         {
+                                            var product = detail.Product;
+                                            var originalPrice = product.Price;
+                                            var discountedPrice = originalPrice * (100 - Model.discount) / 100;
+                                            var savings = originalPrice - discountedPrice;
+
                                             <tr>
-                                                <td>@product.ProductName</td>
-                                                <td>@product.Price.ToString("N0") VND</td>
-                                                <td class="text-success">
-                                                    @((product.Price * (100 - Model.discount) / 100).ToString("N0")) VND
+                                                <td>
+                                                    @if (!string.IsNullOrEmpty(product.Image))
+                                                    {
+                                                        <img src="@product.Image" alt="@product.ProductName" class="img-thumbnail"
+                                                            style="width: 40px; height: 40px;">
+                                                    }
+                                                    else
+                                                    {
+                                                        <div class="bg-light d-flex align-items-center justify-content-center"
+                                                            style="width: 40px; height: 40px;">
+                                                            <i class="fas fa-image text-muted"></i>
+                                                        </div>
+                                                    }
+                                                </td>
+                                                <td>
+                                                    <strong>@product.ProductName</strong>
+                                                    <br>
+                                                    <small class="text-muted">@product.Supplier</small>
+                                                </td>
+                                                <td>
+                                                    <span class="text-muted">
+                                                        <del>@originalPrice.ToString("N0") VND</del>
+                                                    </span>
+                                                </td>
+                                                <td>
+                                                    <strong class="text-success">
+                                                        @discountedPrice.ToString("N0") VND
+                                                    </strong>
+                                                </td>
+                                                <td>
+                                                    <span class="badge bg-info">
+                                                        -@savings.ToString("N0") VND
+                                                    </span>
                                                 </td>
                                             </tr>
                                         }
                                     </tbody>
                                 </table>
                             </div>
+                            <div class="mt-3">
+                                <small class="text-muted">
+                                    <i class="fas fa-info-circle"></i>
+                                    Tổng cộng <strong>@Model.PromotionDetails.Count()</strong> sản phẩm được áp dụng khuyến
+                                    mãi
+                                </small>
+                            </div>
                         }
                         else
                         {
-                            <p class="text-muted">Áp dụng cho tất cả sản phẩm</p>
+                            <div class="alert alert-info">
+                                <i class="fas fa-info-circle"></i>
+                                Chưa có sản phẩm nào được áp dụng khuyến mãi này
+                            </div>
                         }
                     </div>
                 </div>
@@ -181,7 +225,7 @@
                 <h6><i class="fas fa-cogs"></i> Thao tác Master</h6>
             </div>
             <div class="card-body">
-                @if (Model.Status == "Generated")
+                @if (Model.Status == "Spending")
                 {
                     @if (Model.EndDate > DateTime.Now)
                     {
@@ -241,17 +285,17 @@
                         {
                             case "Approved":
                                 <br>
-
+                    
                                 <small>Đã được duyệt và đang hoạt động</small>
                                 break;
                             case "Rejected":
                                 <br>
-
+                    
                                 <small>Đã bị từ chối</small>
                                 break;
                             case "Expired":
                                 <br>
-
+                    
                                 <small>Đã hết hạn</small>
                                 break;
                         }
@@ -264,7 +308,7 @@
                     <a href="/Master/PromotionApproval" class="btn btn-secondary">
                         <i class="fas fa-arrow-left"></i> Quay lại danh sách
                     </a>
-                    @if (Model.Status == "Generated")
+                    @if (Model.Status == "Spending")
                     {
                         <a href="/Master/PromotionApproval/PendingPromotions" class="btn btn-outline-warning">
                             <i class="fas fa-clock"></i> Xem khuyến mãi chờ duyệt
@@ -326,25 +370,25 @@
             $.get('/Master/PromotionApproval/GetPromotionStats')
                 .done(function (data) {
                     const statsHtml = `
-                                <div class="row text-center">
-                                    <div class="col-6 mb-2">
-                                        <h6 class="text-warning">${data.todayPending}</h6>
-                                        <small>Hôm nay chờ duyệt</small>
-                                    </div>
-                                    <div class="col-6 mb-2">
-                                        <h6 class="text-success">${data.totalApproved}</h6>
-                                        <small>Tổng đã duyệt</small>
-                                    </div>
-                                    <div class="col-6">
-                                        <h6 class="text-info">${data.activePromotions}</h6>
-                                        <small>Đang hoạt động</small>
-                                    </div>
-                                    <div class="col-6">
-                                        <h6 class="text-danger">${data.expiredThisMonth}</h6>
-                                        <small>Hết hạn tháng này</small>
-                                    </div>
+                            <div class="row text-center">
+                                <div class="col-6 mb-2">
+                                    <h6 class="text-warning">${data.todayPending}</h6>
+                                    <small>Hôm nay chờ duyệt</small>
                                 </div>
-                            `;
+                                <div class="col-6 mb-2">
+                                    <h6 class="text-success">${data.totalApproved}</h6>
+                                    <small>Tổng đã duyệt</small>
+                                </div>
+                                <div class="col-6">
+                                    <h6 class="text-info">${data.activePromotions}</h6>
+                                    <small>Đang hoạt động</small>
+                                </div>
+                                <div class="col-6">
+                                    <h6 class="text-danger">${data.expiredThisMonth}</h6>
+                                    <small>Hết hạn tháng này</small>
+                                </div>
+                            </div>
+                        `;
                     $('#quickStats').html(statsHtml);
                 })
                 .fail(function () {

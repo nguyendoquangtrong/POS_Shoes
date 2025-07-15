@@ -16,10 +16,10 @@
 <form asp-action="Edit" method="post" enctype="multipart/form-data" id="editProductForm">
     <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
 
-    <!-- Hidden fields cho HTTP PUT -->
-    <input type="hidden" name="_method" value="PUT" />
+    <!-- Hidden fields -->
     <input type="hidden" asp-for="ProductID" />
     <input type="hidden" asp-for="Image" />
+    <input type="hidden" asp-for="ImagePublicId" />
 
     <!-- Hidden container for deleted size IDs -->
     <div id="deletedSizesContainer"></div>
@@ -81,9 +81,10 @@
                                 <label asp-for="Status" class="form-label">
                                     <i class="fas fa-toggle-on"></i> Trạng Thái
                                 </label>
+                                <!-- ✅ Cập nhật values để khớp với model mới -->
                                 <select asp-for="Status" class="form-select">
-                                    <option value="active">Hoạt động</option>
-                                    <option value="inactive">Ngừng bán</option>
+                                    <option value="Active">Hoạt động</option>
+                                    <option value="Inactive">Ngừng bán</option>
                                 </select>
                                 <span asp-validation-for="Status" class="text-danger"></span>
                             </div>
@@ -102,13 +103,16 @@
                         </div>
                         <div class="col-md-6">
                             <div class="mb-3">
-                                <label asp-for="PromotionID" class="form-label">
+                                <!-- ✅ Đã sửa: Không còn asp-for="PromotionID" -->
+                                <label class="form-label">
                                     <i class="fas fa-percent"></i> Khuyến Mãi
                                 </label>
-                                <select asp-for="PromotionID" class="form-select" asp-items="ViewBag.PromotionID">
+                                <select name="promotionId" class="form-select" asp-items="ViewBag.PromotionID">
                                     <option value="">-- Không áp dụng --</option>
                                 </select>
-                                <span asp-validation-for="PromotionID" class="text-danger"></span>
+                                <small class="form-text text-muted">
+                                    Chọn chương trình khuyến mãi để áp dụng cho sản phẩm
+                                </small>
                             </div>
                         </div>
                     </div>
@@ -232,8 +236,7 @@
                     </div>
                     <div class="mb-2">
                         <small class="text-muted">Giá trị tồn kho</small>
-                        <div class="fw-bold text-success" id="totalValue">@((Model.Price *
-                                                        @Model.Quantity).ToString("C0"))</div>
+                        <div class="fw-bold text-success" id="totalValue">@((Model.Price * @Model.Quantity).ToString("C0"))</div>
                     </div>
                     <div class="mb-2">
                         <small class="text-muted">ID Sản Phẩm</small>
@@ -268,6 +271,14 @@
     <script>
         // Global variables
         let deletedSizes = [];
+
+        // ✅ Set selected promotion từ ViewBag.CurrentPromotionId
+        $(document).ready(function() {
+            const currentPromotionId = '@ViewBag.CurrentPromotionId';
+            if (currentPromotionId && currentPromotionId !== '00000000-0000-0000-0000-000000000000') {
+                $('select[name="promotionId"]').val(currentPromotionId);
+            }
+        });
 
         // Image preview for edit
         document.getElementById('imageInput').addEventListener('change', function (e) {
@@ -378,18 +389,18 @@
             const newRow = document.createElement('div');
             newRow.className = 'row new-size-row mb-2';
             newRow.innerHTML = `
-                        <div class="col-md-4">
-                            <input type="text" name="newSizes" class="form-control" placeholder="Kích cỡ mới" />
-                        </div>
-                        <div class="col-md-4">
-                            <input type="number" name="newQuantities" class="form-control size-quantity" placeholder="Số lượng" min="0" />
-                        </div>
-                        <div class="col-md-4">
-                            <button type="button" class="btn btn-outline-danger remove-new-size">
-                                <i class="fas fa-trash"></i> Xóa
-                            </button>
-                        </div>
-                    `;
+                <div class="col-md-4">
+                    <input type="text" name="newSizes" class="form-control" placeholder="Kích cỡ mới" />
+                </div>
+                <div class="col-md-4">
+                    <input type="number" name="newQuantities" class="form-control size-quantity" placeholder="Số lượng" min="0" />
+                </div>
+                <div class="col-md-4">
+                    <button type="button" class="btn btn-outline-danger remove-new-size">
+                        <i class="fas fa-trash"></i> Xóa
+                    </button>
+                </div>
+            `;
             container.appendChild(newRow);
             updateRemoveButtons();
         });
@@ -417,9 +428,9 @@
             const alertDiv = document.createElement('div');
             alertDiv.className = `alert alert-${type} alert-dismissible fade show`;
             alertDiv.innerHTML = `
-                        ${message}
-                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                    `;
+                ${message}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            `;
 
             const form = document.getElementById('editProductForm');
             form.insertBefore(alertDiv, form.firstChild);

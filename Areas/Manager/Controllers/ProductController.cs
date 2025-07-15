@@ -18,29 +18,29 @@ namespace POS_Shoes.Areas.Manager.Controllers
             _cloudinaryService = cloudinaryService;
         }
 
-        // GET: Manager/Product/Create - SỬA LỖI
+        // GET: Manager/Product/Create - CẬP NHẬT
         public async Task<IActionResult> Create()
         {
             try
             {
                 // Lấy danh sách promotions an toàn
                 var promotions = await _context.Promotions
-                    .Where(p => p.IsActive) // Chỉ lấy promotion đang active
+                    .Where(p => p.IsActive &&
+                               p.StartDate <= DateTime.Now &&
+                               p.EndDate >= DateTime.Now)
                     .OrderBy(p => p.Name)
                     .ToListAsync();
 
-                // Tạo SelectList với tên trường đúng và xử lý trường hợp rỗng
                 ViewData["PromotionID"] = new SelectList(
                     promotions ?? new List<Promotion>(),
                     "PromotionID",
-                    "Name" // SỬA: từ "PromotionName" thành "Name"
+                    "Name"
                 );
 
                 return View();
             }
             catch (Exception ex)
             {
-                // Log error và tạo SelectList rỗng
                 Console.WriteLine($"Error loading promotions: {ex.Message}");
                 ViewData["PromotionID"] = new SelectList(new List<Promotion>(), "PromotionID", "Name");
                 TempData["Warning"] = "Không thể tải danh sách khuyến mãi. Vui lòng thử lại.";
@@ -48,62 +48,86 @@ namespace POS_Shoes.Areas.Manager.Controllers
             }
         }
 
-        // POST: Manager/Product/Create - SỬA LỖI
+        // POST: Manager/Product/Create - CẬP NHẬT
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create([Bind("ProductName,Price,Barcode,Supplier,Status,PromotionID")] Product product,
-            IFormFile? imageFile, List<string> sizes, List<int> quantities)
+        public async Task<IActionResult> Create([Bind("ProductName,Price,Barcode,Supplier,Status")] Product product,
+            IFormFile? imageFile, List<string> sizes, List<int> quantities, Guid? promotionId)
         {
             if (ModelState.IsValid)
             {
-                product.ProductID = Guid.NewGuid();
-
-                // Handle image upload to Cloudinary
-                if (imageFile != null && imageFile.Length > 0)
+                using var transaction = await _context.Database.BeginTransactionAsync();
+                try
                 {
-                    try
-                    {
-                        var uploadResult = await _cloudinaryService.UploadImageAsync(imageFile, "products");
-                        product.Image = uploadResult.SecureUrl.ToString();
-                        product.ImagePublicId = uploadResult.PublicId;
-                    }
-                    catch (Exception ex)
-                    {
-                        TempData["Error"] = $"Lỗi upload hình ảnh: {ex.Message}";
-                        await LoadPromotionsForView(product.PromotionID); // SỬA: Dùng method helper
-                        return View(product);
-                    }
-                }
+                    product.ProductID = Guid.NewGuid();
 
-                _context.Add(product);
-
-                // Add product sizes
-                for (int i = 0; i < sizes.Count; i++)
-                {
-                    if (!string.IsNullOrEmpty(sizes[i]) && quantities[i] > 0)
+                    // Handle image upload to Cloudinary
+                    if (imageFile != null && imageFile.Length > 0)
                     {
-                        var productSize = new ProductSize
+                        try
                         {
-                            SizeID = Guid.NewGuid(),
-                            ProductID = product.ProductID,
-                            Size = sizes[i],
-                            Quantity = quantities[i]
-                        };
-                        _context.ProductSizes.Add(productSize);
+                            var uploadResult = await _cloudinaryService.UploadImageAsync(imageFile, "products");
+                            product.Image = uploadResult.SecureUrl.ToString();
+                            product.ImagePublicId = uploadResult.PublicId;
+                        }
+                        catch (Exception ex)
+                        {
+                            TempData["Error"] = $"Lỗi upload hình ảnh: {ex.Message}";
+                            await LoadPromotionsForView(promotionId);
+                            return View(product);
+                        }
                     }
-                }
 
-                await _context.SaveChangesAsync();
-                TempData["Success"] = "Tạo sản phẩm thành công!";
-                return RedirectToAction(nameof(Index));
+                    // Add product
+                    _context.Add(product);
+
+                    // Add product sizes
+                    for (int i = 0; i < sizes.Count; i++)
+                    {
+                        if (!string.IsNullOrEmpty(sizes[i]) && quantities[i] > 0)
+                        {
+                            var productSize = new ProductSize
+                            {
+                                SizeID = Guid.NewGuid(),
+                                ProductID = product.ProductID,
+                                Size = sizes[i],
+                                Quantity = quantities[i]
+                            };
+                            _context.ProductSizes.Add(productSize);
+                        }
+                    }
+
+                    // ✅ Xử lý promotion thông qua PromotionDetails
+                    if (promotionId.HasValue && promotionId.Value != Guid.Empty)
+                    {
+                        var promotionDetail = new PromotionDetails
+                        {
+                            PromotionDetailsID = Guid.NewGuid(),
+                            PromotionID = promotionId.Value,
+                            ProductID = product.ProductID,
+                        };
+                        _context.PromotionDetails.Add(promotionDetail);
+                    }
+
+                    await _context.SaveChangesAsync();
+                    await transaction.CommitAsync();
+
+                    TempData["Success"] = "Tạo sản phẩm thành công!";
+                    return RedirectToAction(nameof(Index));
+                }
+                catch (Exception ex)
+                {
+                    await transaction.RollbackAsync();
+                    TempData["Error"] = $"Lỗi tạo sản phẩm: {ex.Message}";
+                    Console.WriteLine($"Create Error: {ex}");
+                }
             }
 
-            // SỬA: Load lại promotions khi validation fail
-            await LoadPromotionsForView(product.PromotionID);
+            await LoadPromotionsForView(promotionId);
             return View(product);
         }
 
-        // GET: Manager/Product/Edit/5 - SỬA LỖI
+        // GET: Manager/Product/Edit/5 - CẬP NHẬT
         public async Task<IActionResult> Edit(Guid? id)
         {
             if (id == null) return NotFound();
@@ -114,19 +138,27 @@ namespace POS_Shoes.Areas.Manager.Controllers
 
             if (product == null) return NotFound();
 
-            await LoadPromotionsForView(product.PromotionID); // SỬA: Dùng method helper
+            // ✅ Lấy promotion hiện tại từ PromotionDetails
+            var currentPromotion = await _context.PromotionDetails
+                .Where(pd => pd.ProductID == id.Value)
+                .Select(pd => pd.PromotionID)
+                .FirstOrDefaultAsync();
+
+            await LoadPromotionsForView(currentPromotion == Guid.Empty ? null : currentPromotion);
+            ViewBag.CurrentPromotionId = currentPromotion;
+
             return View(product);
         }
 
-        // PUT: Manager/Product/Edit/5 - SỬA LỖI
-        [HttpPut]
+        // POST: Manager/Product/Edit/5 - CẬP NHẬT
+        [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Edit(Guid id,
-            [Bind("ProductID,ProductName,Price,Barcode,Supplier,Status,PromotionID,Image,ImagePublicId")]
+            [Bind("ProductID,ProductName,Price,Barcode,Supplier,Status,Image,ImagePublicId")]
             Product product, IFormFile? imageFile,
             List<Guid>? existingSizeIds, List<string>? existingSizes, List<int>? existingQuantities,
             List<string>? newSizes, List<int>? newQuantities,
-            List<Guid>? deletedSizeIds)
+            List<Guid>? deletedSizeIds, Guid? promotionId)
         {
             if (id != product.ProductID) return NotFound();
             CleanupModelStateForSizes();
@@ -142,7 +174,6 @@ namespace POS_Shoes.Areas.Manager.Controllers
 
                     if (existingProduct == null) return NotFound();
 
-                    // Store old image info for potential cleanup
                     var oldImagePublicId = existingProduct.ImagePublicId;
 
                     // Update basic product info
@@ -151,9 +182,8 @@ namespace POS_Shoes.Areas.Manager.Controllers
                     existingProduct.Barcode = product.Barcode;
                     existingProduct.Supplier = product.Supplier;
                     existingProduct.Status = product.Status;
-                    existingProduct.PromotionID = product.PromotionID;
 
-                    // Handle image upload to Cloudinary
+                    // Handle image upload
                     if (imageFile != null && imageFile.Length > 0)
                     {
                         try
@@ -162,7 +192,7 @@ namespace POS_Shoes.Areas.Manager.Controllers
                             existingProduct.Image = uploadResult.SecureUrl.ToString();
                             existingProduct.ImagePublicId = uploadResult.PublicId;
 
-                            // Delete old image from Cloudinary (background task)
+                            // Delete old image from Cloudinary
                             if (!string.IsNullOrEmpty(oldImagePublicId))
                             {
                                 _ = Task.Run(async () =>
@@ -182,11 +212,13 @@ namespace POS_Shoes.Areas.Manager.Controllers
                         {
                             TempData["Error"] = $"Lỗi upload hình ảnh: {ex.Message}";
                             await transaction.RollbackAsync();
-
-                            await LoadPromotionsForView(product.PromotionID); // SỬA: Dùng method helper
+                            await LoadPromotionsForView(promotionId);
                             return View(existingProduct);
                         }
                     }
+
+                    // ✅ Xử lý promotion thông qua PromotionDetails
+                    await HandlePromotionUpdate(id, promotionId);
 
                     // Handle Size Updates
                     await HandleSizeUpdates(existingProduct, deletedSizeIds, existingSizeIds,
@@ -210,79 +242,75 @@ namespace POS_Shoes.Areas.Manager.Controllers
                 .Include(p => p.ProductSizes)
                 .FirstOrDefaultAsync(p => p.ProductID == id);
 
-            await LoadPromotionsForView(product.PromotionID); // SỬA: Dùng method helper
+            await LoadPromotionsForView(promotionId);
             return View(productWithSizes ?? product);
         }
 
-        // THÊM: Helper method để load promotions an toàn
-        private async Task LoadPromotionsForView(Guid? selectedPromotionId = null)
-        {
-            try
-            {
-                var promotions = await _context.Promotions
-                    .Where(p => p.IsActive)
-                    .OrderBy(p => p.Name)
-                    .ToListAsync();
-
-                ViewData["PromotionID"] = new SelectList(
-                    promotions ?? new List<Promotion>(),
-                    "PromotionID",
-                    "Name",
-                    selectedPromotionId
-                );
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Error loading promotions: {ex.Message}");
-                ViewData["PromotionID"] = new SelectList(new List<Promotion>(), "PromotionID", "Name");
-            }
-        }
-
-        // Các method khác giữ nguyên...
-
-        // GET: Manager/Product
+        // GET: Manager/Product/Index - CẬP NHẬT
         public async Task<IActionResult> Index()
         {
             var products = await _context.Products
                 .Include(p => p.ProductSizes)
-                .Include(p => p.Promotion)
                 .ToListAsync();
+
+            // ✅ Load promotion data cho mỗi product
+            var productIds = products.Select(p => p.ProductID).ToList();
+            var promotionDetails = await _context.PromotionDetails
+                .Include(pd => pd.Promotion)
+                .Where(pd => productIds.Contains(pd.ProductID))
+                .ToListAsync();
+
+            ViewBag.PromotionDetails = promotionDetails;
+
             return View(products);
         }
 
-        // GET: Manager/Product/Details/5
+        // GET: Manager/Product/Details/5 - CẬP NHẬT
         public async Task<IActionResult> Details(Guid? id)
         {
             if (id == null) return NotFound();
 
             var product = await _context.Products
                 .Include(p => p.ProductSizes)
-                .Include(p => p.Promotion)
                 .FirstOrDefaultAsync(m => m.ProductID == id);
 
             if (product == null) return NotFound();
 
+            // ✅ Load promotion data
+            var promotionDetail = await _context.PromotionDetails
+                .Include(pd => pd.Promotion)
+                .FirstOrDefaultAsync(pd => pd.ProductID == id);
+
+            ViewBag.PromotionDetail = promotionDetail;
+
             return View(product);
         }
 
-        // GET: Manager/Product/Delete/5
+        // GET: Manager/Product/Delete/5 - CẬP NHẬT
         public async Task<IActionResult> Delete(Guid? id)
         {
             if (id == null) return NotFound();
 
             var product = await _context.Products
                 .Include(p => p.ProductSizes)
-                .Include(p => p.Promotion)
                 .FirstOrDefaultAsync(m => m.ProductID == id);
+
             if (product == null) return NotFound();
+
+            // ✅ Load promotion data
+            var promotionDetail = await _context.PromotionDetails
+                .Include(pd => pd.Promotion)
+                .FirstOrDefaultAsync(pd => pd.ProductID == id);
+
+            ViewBag.PromotionDetail = promotionDetail;
 
             return View(product);
         }
 
-        // DELETE: Manager/Product/Delete/5
-        [HttpDelete]
+        // DELETE: Manager/Product/Delete/5 - CẬP NHẬT
+        [HttpPost, ActionName("Delete")]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Delete(Guid id)
+        public async Task<IActionResult> DeleteConfirmed(Guid id)
         {
             try
             {
@@ -299,6 +327,16 @@ namespace POS_Shoes.Areas.Manager.Controllers
                 using var transaction = await _context.Database.BeginTransactionAsync();
                 try
                 {
+                    // ✅ Remove PromotionDetails first
+                    var promotionDetails = await _context.PromotionDetails
+                        .Where(pd => pd.ProductID == id)
+                        .ToListAsync();
+
+                    if (promotionDetails.Any())
+                    {
+                        _context.PromotionDetails.RemoveRange(promotionDetails);
+                    }
+
                     // Remove associated product sizes
                     if (product.ProductSizes != null && product.ProductSizes.Any())
                     {
@@ -314,7 +352,6 @@ namespace POS_Shoes.Areas.Manager.Controllers
                         }
                         catch (Exception ex)
                         {
-                            // Log error but continue with product deletion
                             Console.WriteLine($"Failed to delete image from Cloudinary: {ex.Message}");
                         }
                     }
@@ -339,6 +376,58 @@ namespace POS_Shoes.Areas.Manager.Controllers
             {
                 TempData["Error"] = $"Lỗi hệ thống: {ex.Message}";
                 return RedirectToAction(nameof(Index));
+            }
+        }
+
+        // ✅ Helper method mới để xử lý promotion
+        private async Task HandlePromotionUpdate(Guid productId, Guid? promotionId)
+        {
+            // Remove existing promotion details
+            var existingPromotionDetails = await _context.PromotionDetails
+                .Where(pd => pd.ProductID == productId)
+                .ToListAsync();
+
+            if (existingPromotionDetails.Any())
+            {
+                _context.PromotionDetails.RemoveRange(existingPromotionDetails);
+            }
+
+            // Add new promotion detail if promotionId is provided
+            if (promotionId.HasValue && promotionId.Value != Guid.Empty)
+            {
+                var newPromotionDetail = new PromotionDetails
+                {
+                    PromotionDetailsID = Guid.NewGuid(),
+                    PromotionID = promotionId.Value,
+                    ProductID = productId,
+                };
+                _context.PromotionDetails.Add(newPromotionDetail);
+            }
+        }
+
+        // Helper method để load promotions - CẬP NHẬT
+        private async Task LoadPromotionsForView(Guid? selectedPromotionId = null)
+        {
+            try
+            {
+                var promotions = await _context.Promotions
+                    .Where(p => p.IsActive &&
+                               p.StartDate <= DateTime.Now &&
+                               p.EndDate >= DateTime.Now)
+                    .OrderBy(p => p.Name)
+                    .ToListAsync();
+
+                ViewData["PromotionID"] = new SelectList(
+                    promotions ?? new List<Promotion>(),
+                    "PromotionID",
+                    "Name",
+                    selectedPromotionId
+                );
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error loading promotions: {ex.Message}");
+                ViewData["PromotionID"] = new SelectList(new List<Promotion>(), "PromotionID", "Name");
             }
         }
 

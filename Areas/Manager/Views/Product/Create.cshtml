@@ -1,4 +1,3 @@
-<!-- Areas/Manager/Views/Product/Create.cshtml -->
 @model POS_Shoes.Models.Entities.Product
 @{
     ViewData["Title"] = "Tạo Sản Phẩm Mới";
@@ -61,8 +60,8 @@
                                     <i class="fas fa-toggle-on"></i> Trạng Thái
                                 </label>
                                 <select asp-for="Status" class="form-select">
-                                    <option value="active">Hoạt động</option>
-                                    <option value="inactive">Ngừng bán</option>
+                                    <option value="Active">Hoạt động</option>
+                                    <option value="Inactive">Ngừng bán</option>
                                 </select>
                                 <span asp-validation-for="Status" class="text-danger"></span>
                             </div>
@@ -81,15 +80,18 @@
                         </div>
                         <div class="col-md-6">
                             <div class="mb-3">
-                                <label asp-for="PromotionID" class="form-label">
-                                    <i class="fas fa-percent"></i> Khuyến Mãi
+                                <label class="form-label">
+                                    <i class="fas fa-percent"></i> Khuyến mãi
                                 </label>
-                                <select asp-for="PromotionID" class="form-select" asp-items="ViewBag.PromotionID">
+
+                                <!-- chỉ đổi đúng dòng select -->
+                                <select name="promotionId" class="form-select" asp-items="ViewBag.PromotionID">
                                     <option value="">-- Không áp dụng --</option>
                                 </select>
-                                <span asp-validation-for="PromotionID" class="text-danger"></span>
+                                <!-- KHÔNG dùng asp-validation-for vì không gắn vào Product -->
                             </div>
                         </div>
+
                     </div>
                 </div>
             </div>
@@ -170,11 +172,11 @@
                 reader.readAsDataURL(file);
             } else {
                 preview.innerHTML = `
-                        <div class="border rounded p-4 bg-light">
-                            <i class="fas fa-image fa-3x text-muted mb-2"></i>
-                            <p class="text-muted">Chưa có hình ảnh</p>
-                        </div>
-                    `;
+                                <div class="border rounded p-4 bg-light">
+                                    <i class="fas fa-image fa-3x text-muted mb-2"></i>
+                                    <p class="text-muted">Chưa có hình ảnh</p>
+                                </div>
+                            `;
             }
         });
 
@@ -184,18 +186,18 @@
             const newRow = document.createElement('div');
             newRow.className = 'row size-row mt-2';
             newRow.innerHTML = `
-                    <div class="col-md-6">
-                        <input type="text" name="sizes" class="form-control" placeholder="Kích cỡ" />
-                    </div>
-                    <div class="col-md-5">
-                        <input type="number" name="quantities" class="form-control" placeholder="Số lượng" min="0" />
-                    </div>
-                    <div class="col-md-1">
-                        <button type="button" class="btn btn-outline-danger remove-size">
-                            <i class="fas fa-trash"></i>
-                        </button>
-                    </div>
-                `;
+                            <div class="col-md-6">
+                                <input type="text" name="sizes" class="form-control" placeholder="Kích cỡ" />
+                            </div>
+                            <div class="col-md-5">
+                                <input type="number" name="quantities" class="form-control" placeholder="Số lượng" min="0" />
+                            </div>
+                            <div class="col-md-1">
+                                <button type="button" class="btn btn-outline-danger remove-size">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+                        `;
             container.appendChild(newRow);
             updateRemoveButtons();
         });

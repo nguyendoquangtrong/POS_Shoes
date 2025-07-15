@@ -1,59 +1,400 @@
 @using POS_Shoes.Models.Entities
 @model IEnumerable<Promotion>
 @{
-    ViewData["Title"] = "Promotion";
+    ViewData["Title"] = "Quản lý Promotion";
     Layout = "~/Areas/Marketing/Views/Shared/_Layout.cshtml";
 }
 
-<h2 class="mb-3"><i class="fas fa-tags"></i> Promotions</h2>
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h2><i class="fas fa-tags"></i> Quản lý Promotions</h2>
+        <p class="text-muted">Quản lý các chương trình khuyến mãi sản phẩm</p>
+    </div>
+    <div>
+        <a asp-action="Create" class="btn btn-primary">
+            <i class="fas fa-plus"></i> Tạo Promotion
+        </a>
+    </div>
+</div>
 
-<a asp-action="Create" class="btn btn-primary mb-3"><i class="fas fa-plus"></i> Tạo Promotion</a>
+<!-- Statistics Cards -->
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="card bg-warning text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h4>@Model.Count(p => p.Status == "Pending")</h4>
+                        <p class="mb-0">Chờ duyệt</p>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="fas fa-clock fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-success text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h4>@Model.Count(p => p.Status == "Approved")</h4>
+                        <p class="mb-0">Đã duyệt</p>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="fas fa-check-circle fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-danger text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h4>@Model.Count(p => p.Status == "Rejected")</h4>
+                        <p class="mb-0">Từ chối</p>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="fas fa-times-circle fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-info text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h4>@Model.Count()</h4>
+                        <p class="mb-0">Tổng cộng</p>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="fas fa-chart-bar fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
 
-<table class="table table-bordered">
-    <thead>
-        <tr>
-            <th>Tên</th>
-            <th>Giảm</th>
-            <th>Thời gian</th>
-            <th>Trạng thái</th>
-            <th></th>
-        </tr>
-    </thead>
-    <tbody>
-        @foreach (var p in Model)
+<!-- Filters -->
+<div class="card mb-4">
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-4">
+                <input type="text" id="searchInput" class="form-control" placeholder="Tìm kiếm promotion...">
+            </div>
+            <div class="col-md-3">
+                <select id="statusFilter" class="form-select">
+                    <option value="">Tất cả trạng thái</option>
+                    <option value="Pending">Chờ duyệt</option>
+                    <option value="Approved">Đã duyệt</option>
+                    <option value="Rejected">Từ chối</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <select id="timeFilter" class="form-select">
+                    <option value="">Tất cả thời gian</option>
+                    <option value="active">Đang hoạt động</option>
+                    <option value="upcoming">Sắp diễn ra</option>
+                    <option value="expired">Đã hết hạn</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <button type="button" class="btn btn-outline-secondary w-100" onclick="clearFilters()">
+                    <i class="fas fa-times"></i> Xóa bộ lọc
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Promotions Table -->
+<div class="card">
+    <div class="card-header">
+        <h6><i class="fas fa-table"></i> Danh sách Promotions</h6>
+    </div>
+    <div class="card-body">
+        @if (Model.Any())
         {
-            <tr>
-                <td>@p.Name</td>
-                <td>@p.discount %</td>
-                <td>@p.StartDate:dd/MM - @p.EndDate:dd/MM</td>
-                <td>
-                    @switch (p.Status)
-                    {
-                        case "Pending":
-                            <span class="badge bg-warning">Chờ duyệt</span>
-                            ; break;
-                        case "Approved":
-
-                            <span class="badge bg-success">Đã duyệt</span>
-                            ; break;
-                        case "Rejected":
-
-                            <span class="badge bg-danger">Từ chối</span>
-                            ; break;
-                    }
-                </td>
-                <td>
-                    @if (p.Status == "Pending")
-                    {
-                        <form asp-action="Delete" asp-route-id="@p.PromotionID" method="post" class="d-inline">
-                            @Html.AntiForgeryToken()
-                            <button class="btn btn-sm btn-danger" onclick="return confirm('Xoá promotion?')">
-                                <i class="fas fa-trash"></i>
-                            </button>
-                        </form>
-                    }
-                </td>
-            </tr>
+            <div class="table-responsive">
+                <table class="table table-striped table-hover" id="promotionsTable">
+                    <thead class="table-dark">
+                        <tr>
+                            <th>Tên Promotion</th>
+                            <th>Giảm giá</th>
+                            <th>Thời gian hiệu lực</th>
+                            <th>Sản phẩm áp dụng</th>
+                            <th>Trạng thái</th>
+                            <th>Ngày tạo</th>
+                            <th>Thao tác</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var promotion in Model)
+                        {
+                            <tr>
+                                <td>
+                                    <strong>@promotion.Name</strong>
+                                    <br>
+                                    <small class="text-muted">#@promotion.PromotionID.ToString().Substring(0, 8)</small>
+                                </td>
+                                <td>
+                                    <span class="badge bg-success fs-6">@promotion.discount%</span>
+                                </td>
+                                <td>
+                                    <div>
+                                        <small class="text-muted">Từ:</small> @promotion.StartDate.ToString("dd/MM/yyyy")<br>
+                                        <small class="text-muted">Đến:</small> @promotion.EndDate.ToString("dd/MM/yyyy")
+                                    </div>
+                                    @{
+                                        var now = DateTime.Now;
+                                        var isActive = promotion.StartDate <= now && promotion.EndDate >= now;
+                                        var isUpcoming = promotion.StartDate > now;
+                                        var isExpired = promotion.EndDate < now;
+                                    }
+                                    @if (isActive)
+                                    {
+                                        <small class="badge bg-success">Đang hoạt động</small>
+                                    }
+                                    else if (isUpcoming)
+                                    {
+                                        <small class="badge bg-info">Sắp diễn ra</small>
+                                    }
+                                    else if (isExpired)
+                                    {
+                                        <small class="badge bg-secondary">Đã hết hạn</small>
+                                    }
+                                </td>
+                                <td>
+                                    @if (promotion.PromotionDetails != null && promotion.PromotionDetails.Any())
+                                    {
+                                        <span class="badge bg-info">
+                                            @promotion.PromotionDetails.Count() sản phẩm
+                                        </span>
+                                        <br>
+                                        <small class="text-muted">
+                                            @string.Join(", ", promotion.PromotionDetails.Take(2).Select(pd => pd.Product.ProductName))
+                                            @if (promotion.PromotionDetails.Count() > 2)
+                                            {
+                                                <text>... (+@(promotion.PromotionDetails.Count() - 2) khác)</text>
+                                            }
+                                        </small>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted">Chưa áp dụng</span>
+                                    }
+                                </td>
+                                <td>
+                                    @switch (promotion.Status)
+                                    {
+                                        case "Pending":
+                                            <span class="badge bg-warning">Chờ duyệt</span>
+                                            break;
+                                        case "Approved":
+                                            <span class="badge bg-success">Đã duyệt</span>
+                                            break;
+                                        case "Rejected":
+                                            <span class="badge bg-danger">Từ chối</span>
+                                            break;
+                                        default:
+                                            <span class="badge bg-secondary">@promotion.Status</span>
+                                            break;
+                                    }
+                                </td>
+                                <td>
+                                    <small>@promotion.CreatedAt.ToString("dd/MM/yyyy HH:mm")</small>
+                                </td>
+                                <td>
+                                    <div class="btn-group btn-group-sm" role="group">
+                                        <a asp-action="Details" asp-route-id="@promotion.PromotionID" 
+                                           class="btn btn-outline-info" title="Xem chi tiết">
+                                            <i class="fas fa-eye"></i>
+                                        </a>
+                                        @if (promotion.Status == "Pending")
+                                        {
+                                            <a asp-action="Edit" asp-route-id="@promotion.PromotionID" 
+                                               class="btn btn-outline-primary" title="Chỉnh sửa">
+                                                <i class="fas fa-edit"></i>
+                                            </a>
+                                            <form asp-action="Delete" asp-route-id="@promotion.PromotionID" 
+                                                  method="post" class="d-inline">
+                                                @Html.AntiForgeryToken()
+                                                <button class="btn btn-outline-danger" 
+                                                        onclick="return confirm('Xóa promotion \"@promotion.Name\"?')" 
+                                                        title="Xóa">
+                                                    <i class="fas fa-trash"></i>
+                                                </button>
+                                            </form>
+                                        }
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
         }
-    </tbody>
-</table>
+        else
+        {
+            <div class="text-center py-5">
+                <i class="fas fa-tags fa-3x text-muted mb-3"></i>
+                <h5 class="text-muted">Chưa có promotion nào</h5>
+                <p class="text-muted">Hãy tạo promotion đầu tiên cho cửa hàng của bạn</p>
+                <a asp-action="Create" class="btn btn-primary">
+                    <i class="fas fa-plus"></i> Tạo Promotion đầu tiên
+                </a>
+            </div>
+        }
+    </div>
+</div>
+
+<!-- Alert Messages -->
+@if (TempData["SuccessMessage"] != null)
+{
+    <div class="position-fixed bottom-0 end-0 p-3" style="z-index: 1050">
+        <div class="toast show" role="alert">
+            <div class="toast-header bg-success text-white">
+                <i class="fas fa-check-circle me-2"></i>
+                <strong class="me-auto">Thành công</strong>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast"></button>
+            </div>
+            <div class="toast-body">
+                @TempData["SuccessMessage"]
+            </div>
+        </div>
+    </div>
+}
+
+@if (TempData["ErrorMessage"] != null)
+{
+    <div class="position-fixed bottom-0 end-0 p-3" style="z-index: 1050">
+        <div class="toast show" role="alert">
+            <div class="toast-header bg-danger text-white">
+                <i class="fas fa-exclamation-circle me-2"></i>
+                <strong class="me-auto">Lỗi</strong>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast"></button>
+            </div>
+            <div class="toast-body">
+                @TempData["ErrorMessage"]
+            </div>
+        </div>
+    </div>
+}
+
+@section Scripts {
+    <script>
+        $(document).ready(function() {
+            // Auto-hide toasts after 5 seconds
+            setTimeout(function() {
+                $('.toast').toast('hide');
+            }, 5000);
+
+            // Search functionality
+            $('#searchInput').on('input', function() {
+                filterTable();
+            });
+
+            // Status filter
+            $('#statusFilter').on('change', function() {
+                filterTable();
+            });
+
+            // Time filter
+            $('#timeFilter').on('change', function() {
+                filterTable();
+            });
+        });
+
+        function filterTable() {
+            const searchTerm = $('#searchInput').val().toLowerCase();
+            const statusFilter = $('#statusFilter').val();
+            const timeFilter = $('#timeFilter').val();
+
+            $('#promotionsTable tbody tr').each(function() {
+                const row = $(this);
+                let showRow = true;
+
+                // Search filter
+                if (searchTerm) {
+                    const text = row.text().toLowerCase();
+                    if (!text.includes(searchTerm)) {
+                        showRow = false;
+                    }
+                }
+
+                // Status filter
+                if (statusFilter && showRow) {
+                    const statusBadge = row.find('td:nth-child(5) .badge').first();
+                    let rowStatus = '';
+                    
+                    if (statusBadge.hasClass('bg-warning')) rowStatus = 'Pending';
+                    else if (statusBadge.hasClass('bg-success')) rowStatus = 'Approved';
+                    else if (statusBadge.hasClass('bg-danger')) rowStatus = 'Rejected';
+                    
+                    if (rowStatus !== statusFilter) {
+                        showRow = false;
+                    }
+                }
+
+                // Time filter
+                if (timeFilter && showRow) {
+                    const timeBadges = row.find('td:nth-child(3) .badge');
+                    let hasTimeMatch = false;
+                    
+                    timeBadges.each(function() {
+                        const badge = $(this);
+                        if (timeFilter === 'active' && badge.hasClass('bg-success')) hasTimeMatch = true;
+                        if (timeFilter === 'upcoming' && badge.hasClass('bg-info')) hasTimeMatch = true;
+                        if (timeFilter === 'expired' && badge.hasClass('bg-secondary')) hasTimeMatch = true;
+                    });
+                    
+                    if (!hasTimeMatch) {
+                        showRow = false;
+                    }
+                }
+
+                row.toggle(showRow);
+            });
+        }
+
+        function clearFilters() {
+            $('#searchInput').val('');
+            $('#statusFilter').val('');
+            $('#timeFilter').val('');
+            filterTable();
+        }
+    </script>
+}
+
+<style>
+    .card {
+        box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+        border: 1px solid rgba(0, 0, 0, 0.125);
+    }
+    
+    .table th {
+        border-top: none;
+        font-weight: 600;
+        font-size: 0.9rem;
+    }
+    
+    .table td {
+        vertical-align: middle;
+        font-size: 0.9rem;
+    }
+    
+    .btn-group-sm > .btn {
+        padding: 0.25rem 0.5rem;
+        font-size: 0.875rem;
+    }
+    
+    .toast {
+        min-width: 300px;
+    }
+</style>

@@ -13,7 +13,7 @@ namespace POS_Shoes.Models.Entities
         public bool IsActive { get; set; } = true;
 
 
-        public ICollection<Product> Products { get; set; }
+        public ICollection<PromotionDetails> PromotionDetails { get; set; }
         public DateTime StartDate { get; set; }
         public DateTime EndDate { get; set; }
 
