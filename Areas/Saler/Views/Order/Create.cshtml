@@ -24,12 +24,13 @@
                 </div>
             </div>
             <div class="card-body">
+                <!-- Product List với hiển thị giá giảm -->
                 <div class="row" id="productList">
                     @foreach (var product in (List<Product>)ViewBag.Products)
                     {
                         <div class="col-md-3 mb-3 product-item" data-name="@product.ProductName.ToLower()">
                             <div class="card product-card"
-                                onclick="selectProduct('@product.ProductID', '@product.ProductName', '@product.Price')">
+                                onclick="selectProduct('@product.ProductID', '@product.ProductName', '@product.Price', '@(product.Promotion?.discount ?? 0)', '@(product.Promotion?.PromotionID ?? Guid.Empty)')">
                                 <div class="card-body text-center">
                                     @if (!string.IsNullOrEmpty(product.Image))
                                     {
@@ -44,7 +45,25 @@
                                     }
                                     <h6 class="card-title">@product.ProductName</h6>
                                     <p class="card-text">
-                                        <strong>@product.Price.ToString("N0") VND</strong><br>
+                                        @if (product.Promotion != null && product.Promotion.discount > 0)
+                                        {
+                                            var discountedPrice = product.Price * (1 - product.Promotion.discount / 100);
+                                            <strong class="text-danger">@discountedPrice.ToString("N0") VND</strong>
+                                    
+                                            <br>
+                                            <small class="text-muted"><del>@product.Price.ToString("N0") VND</del></small>
+
+                                            <br>
+                                            <small class="text-success">-@product.Promotion.discount% OFF</small>
+
+                                            <br>
+                                        }
+                                        else
+                                        {
+                                            <strong>@product.Price.ToString("N0") VND</strong>
+                                    
+                                            <br>
+                                        }
                                         <small class="text-muted">Còn: @product.Quantity</small>
                                     </p>
                                 </div>
@@ -65,7 +84,6 @@
                 </div>
                 <div class="card-body">
                     <!-- Customer Selection -->
-                    <!-- Customer Selection - Updated with phone search -->
                     <div class="mb-3">
                         <label class="form-label">Khách hàng</label>
 
@@ -115,11 +133,23 @@
 
                     <hr>
 
-                    <!-- Totals -->
+                    <!-- Totals - Updated với thông tin giảm giá -->
                     <div class="row mb-2">
-                        <div class="col-6"><strong>Tổng tiền:</strong></div>
+                        <div class="col-6"><strong>Tổng tiền gốc:</strong></div>
                         <div class="col-6 text-end">
-                            <strong id="totalAmount">0 VND</strong>
+                            <span id="originalTotalAmount">0 VND</span>
+                        </div>
+                    </div>
+                    <div class="row mb-2">
+                        <div class="col-6"><strong>Tiết kiệm:</strong></div>
+                        <div class="col-6 text-end">
+                            <span id="totalDiscount" class="text-success">0 VND</span>
+                        </div>
+                    </div>
+                    <div class="row mb-2">
+                        <div class="col-6"><strong>Tổng thanh toán:</strong></div>
+                        <div class="col-6 text-end">
+                            <strong id="totalAmount" class="text-danger">0 VND</strong>
                             <input type="hidden" asp-for="TotalAmount" id="totalAmountInput">
                         </div>
                     </div>
@@ -199,7 +229,7 @@
     </div>
 </div>
 
-<!-- Product Selection Modal - Thay thế Size Selection Modal cũ -->
+<!-- Product Selection Modal -->
 <div class="modal fade" id="productModal" tabindex="-1">
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
@@ -239,10 +269,16 @@
                             <span id="modalStock" class="ms-2 fw-bold"></span>
                         </div>
 
-                        <!-- Price -->
+                        <!-- Price with Discount -->
                         <div class="mb-3">
                             <label class="form-label">Price:</label>
-                            <span id="modalPrice" class="ms-2 fw-bold fs-5 text-success"></span>
+                            <div id="modalPriceContainer" class="ms-2">
+                                <span id="modalPrice" class="fw-bold fs-5 text-success"></span>
+                                <span id="modalOriginalPrice" class="text-muted text-decoration-line-through ms-2"
+                                    style="display: none;"></span>
+                                <span id="modalDiscountBadge" class="badge bg-danger ms-2"
+                                    style="display: none;"></span>
+                            </div>
                         </div>
 
                         <!-- Quantity -->
@@ -285,11 +321,13 @@
         let selectedProduct = null;
         let productSizes = [];
         let currentSelectedSize = null;
-
         let searchTimeout;
         let foundCustomer = null;
 
+        // Products data from server (using safe DTO)
+        const productsData = @Html.Raw(Json.Serialize(ViewBag.ProductsForJs));
 
+        // Phone Search Functions
         $('#phoneSearchInput').on('input', function () {
             const phone = $(this).val().trim();
 
@@ -405,10 +443,7 @@
             }
         });
 
-        // Products data from server (using safe DTO)
-        const productsData = @Html.Raw(Json.Serialize(ViewBag.ProductsForJs));
-
-        // Search products
+        // Product Search Functions
         $('#searchProduct').on('input', function () {
             const searchTerm = $(this).val().toLowerCase();
             $('.product-item').each(function () {
@@ -436,19 +471,34 @@
         function searchByBarcode(barcode) {
             $.get('/Saler/Order/GetProductByBarcode', { barcode: barcode })
                 .done(function (data) {
-                    selectProduct(data.productID, data.productName, data.price, data.sizes);
+                    selectProduct(data.productID, data.productName, data.price, data.discount || 0, data.promotionId || null, data.sizes);
                 })
                 .fail(function () {
                     alert('Không tìm thấy sản phẩm với mã vạch này!');
                 });
         }
 
-        // Select product - Updated to show new modal
-        function selectProduct(productId, productName, price, sizes = null) {
+        // Discount Calculation Function
+        function calculateDiscountedPrice(originalPrice, discountPercent) {
+            if (discountPercent > 0) {
+                return originalPrice * (1 - discountPercent / 100);
+            }
+            return originalPrice;
+        }
+
+        // Select product - Updated to handle discount
+        function selectProduct(productId, productName, price, discount = 0, promotionId = null, sizes = null) {
+            const originalPrice = parseFloat(price);
+            const discountPercent = parseFloat(discount);
+            const discountedPrice = calculateDiscountedPrice(originalPrice, discountPercent);
+
             selectedProduct = {
                 id: productId,
                 name: productName,
-                price: parseFloat(price)
+                originalPrice: originalPrice,
+                discountPercent: discountPercent,
+                price: discountedPrice,
+                promotionId: promotionId
             };
 
             if (sizes) {
@@ -460,6 +510,12 @@
                     productSizes = product.productSizes;
                     selectedProduct.image = product.image;
                     selectedProduct.barcode = product.barcode;
+
+                    // Get discount from product promotion if not provided
+                    if (product.promotion && product.promotion.discount > 0) {
+                        selectedProduct.discountPercent = product.promotion.discount;
+                        selectedProduct.price = calculateDiscountedPrice(originalPrice, product.promotion.discount);
+                    }
                 } else {
                     productSizes = [];
                 }
@@ -472,7 +528,7 @@
             }
         }
 
-        // Show product modal - New function
+        // Show product modal - Updated with discount display
         function showProductModal() {
             if (!selectedProduct) return;
 
@@ -480,17 +536,25 @@
             if (selectedProduct.image) {
                 $('#modalProductImage').attr('src', selectedProduct.image);
             } else {
-                $('#modalProductImage').attr('src', '/images/no-image.png'); // Default image
+                $('#modalProductImage').attr('src', '/images/no-image.png');
             }
 
             // Set product name
             $('#modalProductName').text(selectedProduct.name);
 
-            // Set brand (assuming it's Nike for now, you can add this to your product data)
+            // Set brand
             $('#modalProductBrand').text('Nike');
 
-            // Set price
-            $('#modalPrice').text(selectedProduct.price.toLocaleString() + ' VND');
+            // Set price with discount display
+            if (selectedProduct.discountPercent > 0) {
+                $('#modalPrice').text(selectedProduct.price.toLocaleString() + ' VND').removeClass('text-success').addClass('text-danger');
+                $('#modalOriginalPrice').text(selectedProduct.originalPrice.toLocaleString() + ' VND').show();
+                $('#modalDiscountBadge').text(`-${selectedProduct.discountPercent}% OFF`).show();
+            } else {
+                $('#modalPrice').text(selectedProduct.price.toLocaleString() + ' VND').removeClass('text-danger').addClass('text-success');
+                $('#modalOriginalPrice').hide();
+                $('#modalDiscountBadge').hide();
+            }
 
             // Populate size dropdown
             let sizeOptionsHtml = '';
@@ -547,7 +611,7 @@
             }
         }
 
-        // Add to cart from modal
+        // Add to cart from modal - Updated with discount info
         function addToCartFromModal() {
             if (!selectedProduct || !currentSelectedSize) return;
 
@@ -568,9 +632,12 @@
                     productId: selectedProduct.id,
                     productName: selectedProduct.name,
                     size: currentSelectedSize,
+                    originalPrice: selectedProduct.originalPrice,
                     unitPrice: selectedProduct.price,
+                    discountPercent: selectedProduct.discountPercent,
                     quantity: quantity,
-                    note: note
+                    note: note,
+                    promotionId: selectedProduct.promotionId
                 });
             }
 
@@ -580,46 +647,62 @@
             currentSelectedSize = null;
         }
 
-        // Update cart display - Modified to show note
+        // Update cart display - Updated with discount calculations
         function updateCartDisplay() {
             let cartHtml = '';
             let total = 0;
+            let originalTotal = 0;
+            let totalDiscount = 0;
 
             cart.forEach(function (item, index) {
                 const subtotal = item.unitPrice * item.quantity;
+                const originalSubtotal = item.originalPrice * item.quantity;
+                const itemDiscount = originalSubtotal - subtotal;
+
                 total += subtotal;
+                originalTotal += originalSubtotal;
+                totalDiscount += itemDiscount;
 
                 cartHtml += `
-                                                <div class="cart-item">
-                                                    <div class="d-flex justify-content-between align-items-start">
-                                                        <div>
-                                                            <h6 class="mb-1">${item.productName}</h6>
-                                                            <small class="text-muted">Size: ${item.size}</small><br>
-                                                            ${item.note ? `<small class="text-info">Note: ${item.note}</small><br>` : ''}
-                                                            <small>${item.unitPrice.toLocaleString()} × ${item.quantity} = ${subtotal.toLocaleString()} VND</small>
-                                                        </div>
-                                                        <div>
-                                                            <button type="button" class="btn btn-sm btn-outline-secondary" 
-                                                                    onclick="updateQuantity(${index}, -1)">-</button>
-                                                            <span class="mx-2">${item.quantity}</span>
-                                                            <button type="button" class="btn btn-sm btn-outline-secondary" 
-                                                                    onclick="updateQuantity(${index}, 1)">+</button>
-                                                            <button type="button" class="btn btn-sm btn-outline-danger ms-2" 
-                                                                    onclick="removeFromCart(${index})">
-                                                                <i class="fas fa-trash"></i>
-                                                            </button>
-                                                        </div>
-                                                    </div>
-                                                    <input type="hidden" name="OrderItems[${index}].ProductID" value="${item.productId}">
-                                                    <input type="hidden" name="OrderItems[${index}].ProductName" value="${item.productName}">
-                                                    <input type="hidden" name="OrderItems[${index}].Size" value="${item.size}">
-                                                    <input type="hidden" name="OrderItems[${index}].UnitPrice" value="${item.unitPrice}">
-                                                    <input type="hidden" name="OrderItems[${index}].Quantity" value="${item.quantity}">
-                                                </div>
-                                            `;
+                        <div class="cart-item">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div>
+                                    <h6 class="mb-1">${item.productName}</h6>
+                                    <small class="text-muted">Size: ${item.size}</small><br>
+                                    ${item.note ? `<small class="text-info">Note: ${item.note}</small><br>` : ''}
+                                    ${item.discountPercent > 0 ?
+                        `<small class="text-success">Giảm ${item.discountPercent}%</small><br>
+                                        <small class="text-muted"><del>${item.originalPrice.toLocaleString()} VND</del></small><br>
+                                        <small class="text-danger">${item.unitPrice.toLocaleString()} × ${item.quantity} = ${subtotal.toLocaleString()} VND</small>` :
+                        `<small>${item.unitPrice.toLocaleString()} × ${item.quantity} = ${subtotal.toLocaleString()} VND</small>`
+                    }
+                                </div>
+                                <div>
+                                    <button type="button" class="btn btn-sm btn-outline-secondary" 
+                                            onclick="updateQuantity(${index}, -1)">-</button>
+                                    <span class="mx-2">${item.quantity}</span>
+                                    <button type="button" class="btn btn-sm btn-outline-secondary" 
+                                            onclick="updateQuantity(${index}, 1)">+</button>
+                                    <button type="button" class="btn btn-sm btn-outline-danger ms-2" 
+                                            onclick="removeFromCart(${index})">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            <input type="hidden" name="OrderItems[${index}].ProductID" value="${item.productId}">
+                            <input type="hidden" name="OrderItems[${index}].ProductName" value="${item.productName}">
+                            <input type="hidden" name="OrderItems[${index}].Size" value="${item.size}">
+                            <input type="hidden" name="OrderItems[${index}].UnitPrice" value="${item.unitPrice}">
+                            <input type="hidden" name="OrderItems[${index}].Quantity" value="${item.quantity}">
+                        </div>
+                    `;
             });
 
             $('#cartItems').html(cartHtml);
+
+            // Update totals with discount information
+            $('#originalTotalAmount').text(originalTotal.toLocaleString() + ' VND');
+            $('#totalDiscount').text(totalDiscount.toLocaleString() + ' VND');
             $('#totalAmount').text(total.toLocaleString() + ' VND');
             $('#totalAmountInput').val(total);
 
@@ -705,6 +788,7 @@
                     alert('Có lỗi xảy ra khi thêm khách hàng!');
                 });
         }
+
         // Initialize
         $(document).ready(function () {
             // Focus on barcode input when page loads

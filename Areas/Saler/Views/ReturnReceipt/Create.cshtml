@@ -1,0 +1,187 @@
+@using POS_Shoes.Models.ViewModels
+@model CreateReturnReceiptViewModel
+@{
+    ViewData["Title"] = "Tạo phiếu trả hàng";
+    Layout = "~/Areas/Saler/Views/Shared/_Layout.cshtml";
+}
+
+<div class="row">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-undo"></i> Tạo phiếu trả hàng</h5>
+            </div>
+            <div class="card-body">
+                <!-- Order Information -->
+                <div class="row mb-4">
+                    <div class="col-md-6">
+                        <div class="card bg-light">
+                            <div class="card-body">
+                                <h6><i class="fas fa-receipt"></i> Thông tin đơn hàng</h6>
+                                <p><strong>Mã đơn:</strong> @Model.OrderCode</p>
+                                <p><strong>Ngày tạo:</strong> @Model.OrderDate.ToString("dd/MM/yyyy HH:mm")</p>
+                                <p><strong>Khách hàng:</strong> @Model.CustomerName</p>
+                                @if (!string.IsNullOrEmpty(Model.CustomerPhone))
+                                {
+                                    <p><strong>SĐT:</strong> @Model.CustomerPhone</p>
+                                }
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="card bg-light">
+                            <div class="card-body">
+                                <h6><i class="fas fa-list"></i> Sản phẩm trong đơn hàng</h6>
+                                @foreach (var item in Model.OrderItems)
+                                {
+                                    <div class="d-flex align-items-center mb-2">
+                                        <div>
+                                            <small><strong>@item.ProductName</strong></small><br>
+                                            <small class="text-muted">Size: @item.Size | SL: @item.Quantity |
+                                                @item.UnitPrice.ToString("N0") VND</small>
+                                        </div>
+                                    </div>
+                                }
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Return Form -->
+                <form asp-action="Create" method="post">
+                    <input type="hidden" asp-for="OrderID" />
+                    <input type="hidden" asp-for="OrderCode" />
+                    <input type="hidden" asp-for="OrderDate" />
+                    <input type="hidden" asp-for="CustomerName" />
+                    <input type="hidden" asp-for="CustomerPhone" />
+
+                    <div class="row">
+                        <div class="col-md-12">
+                            <div class="mb-3">
+                                <label asp-for="Reason" class="form-label"></label>
+                                <textarea asp-for="Reason" class="form-control" rows="3"
+                                    placeholder="Nhập lý do trả hàng..."></textarea>
+                                <span asp-validation-for="Reason" class="text-danger"></span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-12">
+                            <h6><i class="fas fa-box"></i> Chọn sản phẩm cần trả</h6>
+                            <div class="table-responsive">
+                                <table class="table table-bordered">
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th>Sản phẩm</th>
+                                            <th>Size</th>
+                                            <th>Đơn giá</th>
+                                            <th>SL tối đa</th>
+                                            <th>SL trả</th>
+                                            <th>Thành tiền</th>
+                                            <th>Ghi chú</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @for (int i = 0; i < Model.OrderItems.Count; i++)
+                                        {
+                                            var item = Model.OrderItems[i];
+                                            <tr>
+                                                <td>
+                                                    @item.ProductName
+                                                    <input type="hidden" name="ReturnItems[@i].ProductID"
+                                                        value="@item.ProductID" />
+                                                    <input type="hidden" name="ReturnItems[@i].ProductName"
+                                                        value="@item.ProductName" />
+                                                </td>
+                                                <td>
+                                                    @item.Size
+                                                    <input type="hidden" name="ReturnItems[@i].Size" value="@item.Size" />
+                                                </td>
+                                                <td>
+                                                    @item.UnitPrice.ToString("N0") VND
+                                                    <input type="hidden" name="ReturnItems[@i].UnitPrice"
+                                                        value="@item.UnitPrice" />
+                                                </td>
+                                                <td>
+                                                    @item.Quantity
+                                                    <input type="hidden" name="ReturnItems[@i].MaxQuantity"
+                                                        value="@item.Quantity" />
+                                                </td>
+                                                <td>
+                                                    <input type="number" name="ReturnItems[@i].ReturnQuantity"
+                                                        class="form-control return-quantity" min="0" max="@item.Quantity"
+                                                        value="0" data-price="@item.UnitPrice" data-index="@i">
+                                                </td>
+                                                <td>
+                                                    <span class="refund-amount" id="refundAmount@(i)">0 VND</span>
+                                                    <input type="hidden" name="ReturnItems[@i].RefundAmount"
+                                                        id="refundAmountInput@(i)" value="0" />
+                                                </td>
+                                                <td>
+                                                    <input type="text" name="ReturnItems[@i].Note" class="form-control"
+                                                        placeholder="Ghi chú...">
+                                                </td>
+                                            </tr>
+                                        }
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="card bg-success text-white">
+                                <div class="card-body">
+                                    <h6><i class="fas fa-money-bill-wave"></i> Tổng tiền hoàn</h6>
+                                    <h4 id="totalRefund">0 VND</h4>
+                                    <input type="hidden" asp-for="TotalRefundAmount" id="totalRefundInput" />
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="d-grid gap-2">
+                                <button type="submit" class="btn btn-success btn-lg">
+                                    <i class="fas fa-save"></i> Tạo phiếu trả hàng
+                                </button>
+                                <a href="@Url.Action("SelectOrder")" class="btn btn-secondary">
+                                    <i class="fas fa-arrow-left"></i> Quay lại
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    $(document).ready(function () {
+        // Calculate refund amount when quantity changes
+        $('.return-quantity').on('input', function () {
+            const quantity = parseInt($(this).val()) || 0;
+            const price = parseFloat($(this).data('price'));
+            const index = $(this).data('index');
+            const refundAmount = quantity * price;
+
+            $('#refundAmount' + index).text(refundAmount.toLocaleString() + ' VND');
+            $('#refundAmountInput' + index).val(refundAmount);
+
+            calculateTotal();
+        });
+
+        function calculateTotal() {
+            let total = 0;
+            $('.return-quantity').each(function () {
+                const quantity = parseInt($(this).val()) || 0;
+                const price = parseFloat($(this).data('price'));
+                total += quantity * price;
+            });
+
+            $('#totalRefund').text(total.toLocaleString() + ' VND');
+            $('#totalRefundInput').val(total);
+        }
+    });
+</script>

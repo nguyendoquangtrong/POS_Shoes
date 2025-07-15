@@ -9,7 +9,7 @@
 <div class="row">
     <div class="col-md-12">
         <div class="d-flex justify-content-between align-items-center mb-4">
-            <h2><i class="fas fa-tags"></i> Duyệt khuyến mãi</h2>
+            <h2><i class="fas fa-tags"></i> Quản lý duyệt khuyến mãi</h2>
             <div class="d-flex gap-2">
                 <select id="statusFilter" class="form-select" onchange="filterByStatus()">
                     <option value="">Tất cả trạng thái</option>
@@ -21,7 +21,9 @@
 
                 @if (ViewBag.PendingCount > 0)
                 {
-                    <span class="badge bg-warning fs-6">@ViewBag.PendingCount chờ duyệt</span>
+                    <a href="/Master/PromotionApproval/PendingPromotions" class="btn btn-warning">
+                        <i class="fas fa-clock"></i> @ViewBag.PendingCount chờ duyệt
+                    </a>
                 }
             </div>
         </div>
@@ -29,34 +31,62 @@
         <!-- Statistics Cards -->
         <div class="row mb-4">
             <div class="col-md-3">
-                <div class="card stats-card status-pending">
+                <div class="card stats-card border-start border-warning border-4">
                     <div class="card-body">
-                        <h4>@Model.Count(p => p.Status == "Spending")</h4>
-                        <p class="text-muted">Chờ duyệt</p>
+                        <div class="d-flex">
+                            <div class="flex-grow-1">
+                                <h4 class="text-warning">@Model.Count(p => p.Status == "Generated")</h4>
+                                <p class="text-muted mb-0">Chờ duyệt</p>
+                            </div>
+                            <div class="align-self-center">
+                                <i class="fas fa-clock fa-2x text-warning"></i>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
             <div class="col-md-3">
-                <div class="card stats-card status-approved">
+                <div class="card stats-card border-start border-success border-4">
                     <div class="card-body">
-                        <h4>@Model.Count(p => p.Status == "Approved")</h4>
-                        <p class="text-muted">Đang hoạt động</p>
+                        <div class="d-flex">
+                            <div class="flex-grow-1">
+                                <h4 class="text-success">@Model.Count(p => p.Status == "Approved")</h4>
+                                <p class="text-muted mb-0">Đã duyệt</p>
+                            </div>
+                            <div class="align-self-center">
+                                <i class="fas fa-check-circle fa-2x text-success"></i>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
             <div class="col-md-3">
-                <div class="card stats-card status-rejected">
+                <div class="card stats-card border-start border-danger border-4">
                     <div class="card-body">
-                        <h4>@Model.Count(p => p.Status == "Rejected")</h4>
-                        <p class="text-muted">Bị từ chối</p>
+                        <div class="d-flex">
+                            <div class="flex-grow-1">
+                                <h4 class="text-danger">@Model.Count(p => p.Status == "Rejected")</h4>
+                                <p class="text-muted mb-0">Bị từ chối</p>
+                            </div>
+                            <div class="align-self-center">
+                                <i class="fas fa-times-circle fa-2x text-danger"></i>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
             <div class="col-md-3">
-                <div class="card stats-card" style="border-left-color: #6c757d !important;">
+                <div class="card stats-card border-start border-secondary border-4">
                     <div class="card-body">
-                        <h4>@Model.Count(p => p.Status == "Expired")</h4>
-                        <p class="text-muted">Đã hết hạn</p>
+                        <div class="d-flex">
+                            <div class="flex-grow-1">
+                                <h4 class="text-secondary">@Model.Count(p => p.Status == "Expired")</h4>
+                                <p class="text-muted mb-0">Đã hết hạn</p>
+                            </div>
+                            <div class="align-self-center">
+                                <i class="fas fa-calendar-times fa-2x text-secondary"></i>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -66,15 +96,29 @@
         {
             <!-- Promotions Table -->
             <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h6 class="mb-0">Danh sách khuyến mãi (@ViewBag.TotalPromotions)</h6>
+                    @if (Model.Any(p => p.Status == "Generated"))
+                    {
+                        <button type="button" class="btn btn-sm btn-success" onclick="showBulkApproval()">
+                            <i class="fas fa-check-double"></i> Duyệt hàng loạt
+                        </button>
+                    }
+                </div>
                 <div class="card-body">
                     <div class="table-responsive">
                         <table class="table table-hover">
                             <thead class="table-light">
                                 <tr>
+                                    @if (Model.Any(p => p.Status == "Generated"))
+                                    {
+                                        <th width="30px">
+                                            <input type="checkbox" id="selectAll" onchange="toggleSelectAll()">
+                                        </th>
+                                    }
                                     <th>Tên khuyến mãi</th>
-                                    <th>Loại</th>
-                                    <th>Giá trị</th>
-                                    <th>Thời gian</th>
+                                    <th>Giá trị giảm</th>
+                                    <th>Thời gian áp dụng</th>
                                     <th>Trạng thái</th>
                                     <th>Ngày tạo</th>
                                     <th>Thao tác</th>
@@ -84,30 +128,46 @@
                                 @foreach (var promotion in Model)
                                 {
                                     <tr>
+                                        @if (Model.Any(p => p.Status == "Generated"))
+                                        {
+                                            <td>
+                                                @if (promotion.Status == "Generated")
+                                                {
+                                                    <input type="checkbox" class="promotion-checkbox" value="@promotion.PromotionID">
+                                                }
+                                            </td>
+                                        }
                                         <td>
                                             <div>
                                                 <strong>@promotion.Name</strong><br>
+                                                <small class="text-muted">@promotion.PromotionID.ToString().Substring(0, 8).ToUpper()</small>
                                             </div>
                                         </td>
                                         <td>
-                                            <strong>@promotion.discount%</strong>
+                                            <span class="badge bg-primary fs-6">@promotion.discount%</span>
                                         </td>
                                         <td>
                                             <div>
-                                                <small class="text-muted">Bắt đầu:</small>
-                                                @promotion.StartDate.ToString("dd/MM/yyyy")<br>
-                                                <small class="text-muted">Kết thúc:</small>
-                                                @promotion.EndDate.ToString("dd/MM/yyyy")
+                                                <small class="text-muted">Từ:</small> @promotion.StartDate.ToString("dd/MM/yyyy")<br>
+                                                <small class="text-muted">Đến:</small> @promotion.EndDate.ToString("dd/MM/yyyy")
+                                                @if (promotion.EndDate <= DateTime.Now)
+                                                {
+                                                    <br><small class="text-danger"><i class="fas fa-exclamation-triangle"></i> Đã hết hạn</small>
+                                                }
+                                                else if ((promotion.EndDate - DateTime.Now).TotalDays <= 7)
+                                                {
+                                                    <br><small class="text-warning"><i class="fas fa-clock"></i> Sắp hết hạn</small>
+                                                }
                                             </div>
                                         </td>
                                         <td>
                                             @switch (promotion.Status)
                                             {
-                                                case "Spending":
+                                                case "Generated":
                                                     <span class="badge bg-warning">Chờ duyệt</span>
                                                     break;
                                                 case "Approved":
-                                                    @if (promotion.IsActive)
+                                                    @if (promotion.IsActive && promotion.EndDate > DateTime.Now)
                                                     {
                                                         <span class="badge bg-success">Đang hoạt động</span>
                                                     }
@@ -130,20 +190,29 @@
                                         <td>
                                             <div class="btn-group btn-group-sm">
                                                 <a href="/Master/PromotionApproval/Details/@promotion.PromotionID"
-                                                    class="btn btn-outline-primary">
+                                                   class="btn btn-outline-primary" title="Xem chi tiết">
                                                     <i class="fas fa-eye"></i>
                                                 </a>
-                                                @if (promotion.Status == "Spending")
+                                                @if (promotion.Status == "Generated")
                                                 {
-                                                    <button class="btn btn-outline-success"
-                                                        onclick="quickApprove('@promotion.PromotionID')">
-                                                        <i class="fas fa-check"></i>
-                                                    </button>
+                                                    @if (promotion.EndDate > DateTime.Now)
+                                                    {
+                                                        <button class="btn btn-outline-success"
+                                                                onclick="quickApprove('@promotion.PromotionID')" title="Duyệt nhanh">
+                                                            <i class="fas fa-check"></i>
+                                                        </button>
+                                                    }
+                                                    else
+                                                    {
+                                                        <button class="btn btn-outline-secondary" disabled title="Đã hết hạn">
+                                                            <i class="fas fa-ban"></i>
+                                                        </button>
+                                                    }
                                                 }
-                                                @if (promotion.Status == "Approved" && promotion.IsActive)
+                                                @if (promotion.Status == "Approved" && promotion.IsActive && promotion.EndDate > DateTime.Now)
                                                 {
                                                     <button class="btn btn-outline-warning"
-                                                        onclick="expirePromotion('@promotion.PromotionID')">
+                                                            onclick="expirePromotion('@promotion.PromotionID')" title="Đánh dấu hết hạn">
                                                         <i class="fas fa-clock"></i>
                                                     </button>
                                                 }
@@ -162,11 +231,51 @@
             <div class="text-center py-5">
                 <i class="fas fa-tags fa-4x text-muted mb-3"></i>
                 <h5 class="text-muted">Không có khuyến mãi nào</h5>
-                <p class="text-muted">Chưa có khuyến mãi nào được tạo</p>
+                <p class="text-muted">Chưa có khuyến mãi nào được tạo trong hệ thống</p>
             </div>
         }
     </div>
 </div>
+
+<!-- Bulk Approval Modal -->
+<div class="modal fade" id="bulkApprovalModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Duyệt hàng loạt</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>Bạn có chắc muốn duyệt tất cả khuyến mãi đã chọn?</p>
+                <div id="selectedPromotions"></div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
+                <button type="button" class="btn btn-success" onclick="confirmBulkApproval()">Duyệt hàng loạt</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .stats-card {
+        transition: transform 0.2s;
+        border-radius: 10px;
+    }
+    
+    .stats-card:hover {
+        transform: translateY(-5px);
+    }
+
+    .table th {
+        border-top: none;
+        font-weight: 600;
+    }
+
+    .badge {
+        font-size: 0.75em;
+    }
+</style>
 
 @section Scripts {
     <script>
@@ -181,12 +290,12 @@
                     id: promotionId,
                     __RequestVerificationToken: $('input[name="__RequestVerificationToken"]').val()
                 })
-                    .done(function () {
-                        location.reload();
-                    })
-                    .fail(function () {
-                        alert('Có lỗi xảy ra khi duyệt khuyến mãi');
-                    });
+                .done(function () {
+                    location.reload();
+                })
+                .fail(function () {
+                    alert('Có lỗi xảy ra khi duyệt khuyến mãi');
+                });
             }
         }
 
@@ -196,13 +305,60 @@
                     id: promotionId,
                     __RequestVerificationToken: $('input[name="__RequestVerificationToken"]').val()
                 })
-                    .done(function () {
-                        location.reload();
-                    })
-                    .fail(function () {
-                        alert('Có lỗi xảy ra');
-                    });
+                .done(function () {
+                    location.reload();
+                })
+                .fail(function () {
+                    alert('Có lỗi xảy ra');
+                });
             }
         }
+
+        function toggleSelectAll() {
+            const selectAllCheckbox = document.getElementById('selectAll');
+            const promotionCheckboxes = document.querySelectorAll('.promotion-checkbox');
+            
+            promotionCheckboxes.forEach(checkbox => {
+                checkbox.checked = selectAllCheckbox.checked;
+            });
+        }
+
+        function showBulkApproval() {
+            const selectedCheckboxes = document.querySelectorAll('.promotion-checkbox:checked');
+            
+            if (selectedCheckboxes.length === 0) {
+                alert('Vui lòng chọn ít nhất một khuyến mãi để duyệt!');
+                return;
+            }
+
+            $('#selectedPromotions').html(`<p>Đã chọn <strong>${selectedCheckboxes.length}</strong> khuyến mãi để duyệt.</p>`);
+            $('#bulkApprovalModal').modal('show');
+        }
+
+        function confirmBulkApproval() {
+            const selectedCheckboxes = document.querySelectorAll('.promotion-checkbox:checked');
+            const promotionIds = Array.from(selectedCheckboxes).map(cb => cb.value);
+
+            $.post('/Master/PromotionApproval/ApproveMultiple', {
+                promotionIds: promotionIds,
+                __RequestVerificationToken: $('input[name="__RequestVerificationToken"]').val()
+            })
+            .done(function () {
+                $('#bulkApprovalModal').modal('hide');
+                location.reload();
+            })
+            .fail(function () {
+                alert('Có lỗi xảy ra khi duyệt hàng loạt');
+            });
+        }
+
+        // Add CSRF token to all AJAX requests
+        $.ajaxSetup({
+            beforeSend: function(xhr, settings) {
+                if (!/^(GET|HEAD|OPTIONS|TRACE)$/i.test(settings.type) && !this.crossDomain) {
+                    xhr.setRequestHeader("RequestVerificationToken", $('input[name="__RequestVerificationToken"]').val());
+                }
+            }
+        });
     </script>
 }

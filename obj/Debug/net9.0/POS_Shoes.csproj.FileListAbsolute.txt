@@ -147,6 +147,7 @@
 /Volumes/SSD/Study_Space/CNPM/POS_Shoes/obj/Debug/net9.0/POS_Shoes.MvcApplicationPartsAssemblyInfo.cache
 /Volumes/SSD/Study_Space/CNPM/POS_Shoes/obj/Debug/net9.0/POS_Shoes.RazorAssemblyInfo.cache
 /Volumes/SSD/Study_Space/CNPM/POS_Shoes/obj/Debug/net9.0/POS_Shoes.RazorAssemblyInfo.cs
+/Volumes/SSD/Study_Space/CNPM/POS_Shoes/obj/Debug/net9.0/POS_Shoes.sourcelink.json
 /Volumes/SSD/Study_Space/CNPM/POS_Shoes/obj/Debug/net9.0/scopedcss/Views/Shared/_Layout.cshtml.rz.scp.css
 /Volumes/SSD/Study_Space/CNPM/POS_Shoes/obj/Debug/net9.0/scopedcss/bundle/POS_Shoes.styles.css
 /Volumes/SSD/Study_Space/CNPM/POS_Shoes/obj/Debug/net9.0/scopedcss/projectbundle/POS_Shoes.bundle.scp.css
@@ -233,4 +234,3 @@
 /Volumes/SSD/Study_Space/CNPM/POS_Shoes/obj/Debug/net9.0/POS_Shoes.pdb
 /Volumes/SSD/Study_Space/CNPM/POS_Shoes/obj/Debug/net9.0/POS_Shoes.genruntimeconfig.cache
 /Volumes/SSD/Study_Space/CNPM/POS_Shoes/obj/Debug/net9.0/ref/POS_Shoes.dll
-/Volumes/SSD/Study_Space/CNPM/POS_Shoes/obj/Debug/net9.0/POS_Shoes.sourcelink.json

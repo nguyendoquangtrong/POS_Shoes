@@ -36,6 +36,7 @@
             <div class="col-md-4">
                 <div class="card stats-card status-approved">
                     <div class="card-body">
+                        
                         <h4>@Model.Count(r => r.Status == "Approved")</h4>
                         <p class="text-muted">Đã duyệt</p>
                     </div>
@@ -64,6 +65,7 @@
                                     <th>Đơn hàng gốc</th>
                                     <th>Lý do trả</th>
                                     <th>Số lượng</th>
+                                    <th>Số tiền hoàn</th>
                                     <th>Trạng thái</th>
                                     <th>Ngày tạo</th>
                                     <th>Thao tác</th>
@@ -85,7 +87,16 @@
                                             </div>
                                         </td>
                                         <td>
-                                            <span class="badge bg-info">@returnReceipt.Quantity</span>
+                                            <span class="badge bg-info">@returnReceipt.ReturnReceiptDetails.Sum(q => q.Quantity)</span>
+                                        </td>
+                                        <td>
+                                            <strong class="text-success">
+                                                @returnReceipt.TotalRefundAmount.ToString("N0") VND
+                                            </strong>
+                                            @if (returnReceipt.Status == "Approved")
+                                            {
+                                                <br><small class="text-muted">Đã duyệt</small>
+                                            }
                                         </td>
                                         <td>
                                             @switch (returnReceipt.Status)
@@ -104,6 +115,7 @@
                                         <td>
                                             @returnReceipt.Date.ToString("dd/MM/yyyy")
                                         </td>
+                                        
                                         <td>
                                             <div class="btn-group btn-group-sm">
                                                 <a href="/Master/ReturnReceiptApproval/Details/@returnReceipt.ReturnReceiptID" class="btn btn-outline-primary">

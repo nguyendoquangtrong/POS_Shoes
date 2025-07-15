@@ -1,4 +1,3 @@
-// Areas/Master/Controllers/ReturnReceiptApprovalController.cs
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using POS_Shoes.Models.Data;
@@ -17,7 +16,13 @@ namespace POS_Shoes.Areas.Master.Controllers
         // GET: Master/ReturnReceiptApproval/Index
         public async Task<IActionResult> Index(string status = "")
         {
-            var query = _context.ReturnReceipts.AsQueryable();
+            var query = _context.ReturnReceipts
+                .Include(r => r.Order)
+                    .ThenInclude(o => o.Customer)
+                .Include(r => r.User)
+                .Include(r => r.ReturnReceiptDetails)
+                    .ThenInclude(rd => rd.Product)
+                .AsQueryable();
 
             if (!string.IsNullOrEmpty(status))
             {
@@ -30,6 +35,9 @@ namespace POS_Shoes.Areas.Master.Controllers
 
             ViewBag.SelectedStatus = status;
             ViewBag.PendingCount = await _context.ReturnReceipts.CountAsync(r => r.Status == "Progressing");
+            ViewBag.ApprovedCount = await _context.ReturnReceipts.CountAsync(r => r.Status == "Approved");
+            ViewBag.RejectedCount = await _context.ReturnReceipts.CountAsync(r => r.Status == "Rejected");
+            ViewBag.TotalCount = await _context.ReturnReceipts.CountAsync();
 
             return View(returnReceipts);
         }
@@ -37,21 +45,18 @@ namespace POS_Shoes.Areas.Master.Controllers
         // GET: Master/ReturnReceiptApproval/Details/5
         public async Task<IActionResult> Details(Guid id)
         {
-            var returnReceipt = await _context.ReturnReceipts.FindAsync(id);
+            var returnReceipt = await _context.ReturnReceipts
+                .Include(r => r.Order)
+                    .ThenInclude(o => o.Customer)
+                .Include(r => r.User)
+                .Include(r => r.ReturnReceiptDetails)
+                    .ThenInclude(rd => rd.Product)
+                .FirstOrDefaultAsync(r => r.ReturnReceiptID == id);
+
             if (returnReceipt == null)
             {
                 return NotFound();
             }
-
-            // Load related order information
-            var order = await _context.Orders
-                .Include(o => o.Customer)
-                .Include(o => o.User)
-                .Include(o => o.OrderDetails)
-                    .ThenInclude(od => od.Product)
-                .FirstOrDefaultAsync(o => o.OrderID == returnReceipt.OrderID);
-
-            ViewBag.Order = order;
 
             return View(returnReceipt);
         }
@@ -61,13 +66,24 @@ namespace POS_Shoes.Areas.Master.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Approve(Guid id, string approvalNote = "")
         {
-            var returnReceipt = await _context.ReturnReceipts.FindAsync(id);
+            var returnReceipt = await _context.ReturnReceipts
+                .Include(r => r.ReturnReceiptDetails)
+                .FirstOrDefaultAsync(r => r.ReturnReceiptID == id);
             if (returnReceipt == null)
             {
                 return NotFound();
             }
+            foreach (var dt in returnReceipt.ReturnReceiptDetails)
+            {
+                dt.RefundAmount = dt.Quantity * dt.UnitPrice;
+            }
+
+            var actualRefundAmount = returnReceipt.ReturnReceiptDetails
+                .Sum(detail => detail.RefundAmount);
 
             returnReceipt.Status = "Approved";
+            returnReceipt.TotalRefundAmount = (double)actualRefundAmount;
+
             if (!string.IsNullOrEmpty(approvalNote))
             {
                 returnReceipt.Reason += $" | Master duyệt: {approvalNote}";
@@ -107,6 +123,35 @@ namespace POS_Shoes.Areas.Master.Controllers
 
             TempData["SuccessMessage"] = "Phiếu trả hàng đã bị từ chối!";
             return RedirectToAction("Details", new { id });
+        }
+
+        // POST: Master/ReturnReceiptApproval/BulkApprove
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> BulkApprove(List<Guid> selectedIds)
+        {
+            if (selectedIds == null || !selectedIds.Any())
+            {
+                TempData["ErrorMessage"] = "Vui lòng chọn ít nhất một phiếu trả hàng!";
+                return RedirectToAction("Index");
+            }
+
+            var returnReceipts = await _context.ReturnReceipts
+                .Where(r => selectedIds.Contains(r.ReturnReceiptID) && r.Status == "Progressing")
+                .ToListAsync();
+
+            foreach (var receipt in returnReceipts)
+            {
+                receipt.Status = "Approved";
+                receipt.Reason += $" | Master duyệt hàng loạt";
+            }
+
+            await _context.SaveChangesAsync();
+
+            _logger.LogInformation($"Bulk approved {returnReceipts.Count} return receipts by Master {User.Identity.Name}");
+
+            TempData["SuccessMessage"] = $"Đã duyệt thành công {returnReceipts.Count} phiếu trả hàng!";
+            return RedirectToAction("Index");
         }
     }
 }

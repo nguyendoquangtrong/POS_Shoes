@@ -31,7 +31,8 @@
                         <h6 class="text-muted">Thông tin phiếu trả</h6>
                         <p><strong>Mã phiếu:</strong> #@Model.ReturnReceiptID.ToString().Substring(0, 8)</p>
                         <p><strong>Ngày tạo:</strong> @Model.Date.ToString("dd/MM/yyyy")</p>
-                        <p><strong>Số lượng trả:</strong> <span class="badge bg-info">@Model.Quantity</span></p>
+                        <p><strong>Số lượng trả:</strong> <span class="badge bg-info">@Model.ReturnReceiptDetails.Sum(q
+                                                                => q.Quantity)</span></p>
                     </div>
                     <div class="col-6">
                         <h6 class="text-muted">Đơn hàng gốc</h6>

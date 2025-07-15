@@ -47,6 +47,7 @@
                         <tr>
                             <th>STT</th>
                             <th>Sản phẩm</th>
+                            <th>Size</th>
                             <th>SL</th>
                             <th>Đơn giá</th>
                             <th>Thành tiền</th>
@@ -61,6 +62,7 @@
                             <tr>
                                 <td>@index</td>
                                 <td>@detail.Product.ProductName</td>
+                                <td>@detail.Size</td>
                                 <td>@detail.Quantity</td>
                                 <td>@detail.UnitPrice.ToString("N0")</td>
                                 <td>@((detail.UnitPrice * detail.Quantity).ToString("N0"))</td>
@@ -100,10 +102,10 @@
             const originalContent = document.body.innerHTML;
 
             document.body.innerHTML = `
-                    <div style="padding: 20px; font-family: Arial, sans-serif;">
-                        ${printContent}
-                    </div>
-                `;
+                            <div style="padding: 20px; font-family: Arial, sans-serif;">
+                                ${printContent}
+                            </div>
+                        `;
 
             window.print();
             document.body.innerHTML = originalContent;

@@ -260,6 +260,22 @@ build_metadata.AdditionalFiles.CssScope =
 build_metadata.AdditionalFiles.TargetPath = QXJlYXMvU2FsZXIvVmlld3MvUmVwb3J0L0luZGV4LmNzaHRtbA==
 build_metadata.AdditionalFiles.CssScope = 
 
+[/Volumes/SSD/Study_Space/CNPM/POS_Shoes/Areas/Saler/Views/ReturnReceipt/Create.cshtml]
+build_metadata.AdditionalFiles.TargetPath = QXJlYXMvU2FsZXIvVmlld3MvUmV0dXJuUmVjZWlwdC9DcmVhdGUuY3NodG1s
+build_metadata.AdditionalFiles.CssScope = 
+
+[/Volumes/SSD/Study_Space/CNPM/POS_Shoes/Areas/Saler/Views/ReturnReceipt/Details.cshtml]
+build_metadata.AdditionalFiles.TargetPath = QXJlYXMvU2FsZXIvVmlld3MvUmV0dXJuUmVjZWlwdC9EZXRhaWxzLmNzaHRtbA==
+build_metadata.AdditionalFiles.CssScope = 
+
+[/Volumes/SSD/Study_Space/CNPM/POS_Shoes/Areas/Saler/Views/ReturnReceipt/Index.cshtml]
+build_metadata.AdditionalFiles.TargetPath = QXJlYXMvU2FsZXIvVmlld3MvUmV0dXJuUmVjZWlwdC9JbmRleC5jc2h0bWw=
+build_metadata.AdditionalFiles.CssScope = 
+
+[/Volumes/SSD/Study_Space/CNPM/POS_Shoes/Areas/Saler/Views/ReturnReceipt/SelectOrder.cshtml]
+build_metadata.AdditionalFiles.TargetPath = QXJlYXMvU2FsZXIvVmlld3MvUmV0dXJuUmVjZWlwdC9TZWxlY3RPcmRlci5jc2h0bWw=
+build_metadata.AdditionalFiles.CssScope = 
+
 [/Volumes/SSD/Study_Space/CNPM/POS_Shoes/Areas/Saler/Views/Shared/_Layout.cshtml]
 build_metadata.AdditionalFiles.TargetPath = QXJlYXMvU2FsZXIvVmlld3MvU2hhcmVkL19MYXlvdXQuY3NodG1s
 build_metadata.AdditionalFiles.CssScope = 

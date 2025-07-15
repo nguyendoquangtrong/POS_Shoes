@@ -1,0 +1,117 @@
+@model List<Order>
+@{
+    ViewData["Title"] = "Chọn đơn hàng để trả";
+    Layout = "~/Areas/Saler/Views/Shared/_Layout.cshtml";
+}
+
+<div class="row">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-search"></i> Chọn đơn hàng để tạo phiếu trả</h5>
+                <div class="row mt-3">
+                    <div class="col-md-6">
+                        <input type="text" id="searchOrder" class="form-control"
+                            placeholder="Tìm kiếm theo SĐT khách hàng hoặc mã đơn hàng...">
+                    </div>
+                    <div class="col-md-6">
+                        <button type="button" class="btn btn-primary" id="searchBtn">
+                            <i class="fas fa-search"></i> Tìm kiếm
+                        </button>
+                    </div>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>Mã đơn hàng</th>
+                                <th>Ngày tạo</th>
+                                <th>Khách hàng</th>
+                                <th>Tổng tiền</th>
+                                <th>Số sản phẩm</th>
+                                <th>Thao tác</th>
+                            </tr>
+                        </thead>
+                        <tbody id="orderTableBody">
+                            @foreach (var order in Model)
+                            {
+                                <tr>
+                                    <td>@order.OrderID.ToString().Substring(0, 8).ToUpper()</td>
+                                    <td>@order.OrderDate.ToString("dd/MM/yyyy HH:mm")</td>
+                                    <td>
+                                        @if (order.Customer != null)
+                                        {
+                                            @order.Customer.Name
+                                    
+                                            <br>
+                                            <small class="text-muted">@order.Customer.Phone</small>
+                                        }
+                                        else
+                                        {
+                                            <span class="text-muted">Khách lẻ</span>
+                                        }
+                                    </td>
+                                    <td>@order.TotalPrice.ToString("N0") VND</td>
+                                    <td>@order.OrderDetails.Sum(od => od.Quantity)</td>
+                                    <td>
+                                        <a href="@Url.Action("Create", new { orderId = order.OrderID })"
+                                            class="btn btn-sm btn-primary">
+                                            <i class="fas fa-undo"></i> Tạo phiếu trả
+                                        </a>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    $(document).ready(function () {
+        $('#searchBtn').click(function () {
+            const searchTerm = $('#searchOrder').val();
+            if (searchTerm) {
+                searchOrders(searchTerm);
+            }
+        });
+
+        $('#searchOrder').on('keypress', function (e) {
+            if (e.which === 13) {
+                $('#searchBtn').click();
+            }
+        });
+
+        function searchOrders(searchTerm) {
+            $.get('@Url.Action("SearchOrders")', { searchTerm: searchTerm })
+                .done(function (orders) {
+                    let html = '';
+                    orders.forEach(function (order) {
+                        html += `
+                        <tr>
+                            <td>${order.orderCode}</td>
+                            <td>${order.orderDate}</td>
+                            <td>
+                                ${order.customerName}<br>
+                                <small class="text-muted">${order.customerPhone}</small>
+                            </td>
+                            <td>${order.totalPrice.toLocaleString()} VND</td>
+                            <td>-</td>
+                            <td>
+                                <a href="@Url.Action("Create")/${order.orderID}" 
+                                   class="btn btn-sm btn-primary">
+                                    <i class="fas fa-undo"></i> Tạo phiếu trả
+                                </a>
+                            </td>
+                        </tr>
+                    `;
+                    });
+                    $('#orderTableBody').html(html);
+                });
+        }
+    });
+</script>

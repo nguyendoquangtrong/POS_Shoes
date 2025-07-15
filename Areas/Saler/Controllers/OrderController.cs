@@ -1,4 +1,3 @@
-// Areas/Saler/Controllers/OrderController.cs
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using POS_Shoes.Models.Data;
@@ -18,13 +17,14 @@ namespace POS_Shoes.Areas.Saler.Controllers
         {
             var model = new CreateOrderViewModel();
 
-            // Load products for POS
+            // ✅ Load products với Promotion
             var products = await _context.Products
                 .Include(p => p.ProductSizes)
+                .Include(p => p.Promotion) // ⭐ Thêm dòng này
                 .Where(p => p.Status == "Active")
                 .ToListAsync();
 
-            // Create DTO for JavaScript serialization
+            // ✅ Create DTO với thông tin promotion
             var productsForJs = products.Select(p => new
             {
                 productID = p.ProductID,
@@ -32,6 +32,15 @@ namespace POS_Shoes.Areas.Saler.Controllers
                 price = p.Price,
                 image = p.Image,
                 quantity = p.Quantity,
+                // ⭐ Thêm thông tin promotion
+                promotion = p.Promotion != null ? new
+                {
+                    promotionID = p.Promotion.PromotionID,
+                    discount = p.Promotion.discount,
+                    isActive = p.Promotion.IsActive,
+                    startDate = p.Promotion.StartDate,
+                    endDate = p.Promotion.EndDate
+                } : null,
                 productSizes = p.ProductSizes.Select(ps => new
                 {
                     size = ps.Size,
@@ -80,7 +89,8 @@ namespace POS_Shoes.Areas.Saler.Controllers
                             OrderID = order.OrderID,
                             ProductID = item.ProductID,
                             Quantity = item.Quantity,
-                            UnitPrice = item.UnitPrice
+                            UnitPrice = item.UnitPrice,
+                            Size = item.Size,
                         };
                         order.OrderDetails.Add(orderDetail);
 
@@ -108,9 +118,10 @@ namespace POS_Shoes.Areas.Saler.Controllers
                 }
             }
 
-            // Reload data if validation fails
+            // ✅ Reload data với Promotion nếu validation fails
             ViewBag.Products = await _context.Products
                 .Include(p => p.ProductSizes)
+                .Include(p => p.Promotion) // ⭐ Thêm dòng này
                 .Where(p => p.Status == "Active")
                 .ToListAsync();
 
@@ -139,12 +150,13 @@ namespace POS_Shoes.Areas.Saler.Controllers
             return View(order);
         }
 
-        // API endpoint to get product by barcode
+        // ✅ API endpoint với thông tin promotion
         [HttpGet]
         public async Task<IActionResult> GetProductByBarcode(string barcode)
         {
             var product = await _context.Products
                 .Include(p => p.ProductSizes)
+                .Include(p => p.Promotion) // ⭐ Thêm dòng này
                 .FirstOrDefaultAsync(p => p.Barcode == barcode && p.Status == "Active");
 
             if (product == null)
@@ -157,6 +169,9 @@ namespace POS_Shoes.Areas.Saler.Controllers
                 productID = product.ProductID,
                 productName = product.ProductName,
                 price = product.Price,
+                // ⭐ Thêm thông tin promotion
+                discount = product.Promotion?.discount ?? 0,
+                promotionId = product.Promotion?.PromotionID,
                 sizes = product.ProductSizes.Select(ps => new
                 {
                     size = ps.Size,

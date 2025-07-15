@@ -1,0 +1,476 @@
+@using POS_Shoes.Models;
+@model ReturnReceipt
+@{
+    ViewData["Title"] = "Chi tiết phiếu trả hàng";
+    Layout = "~/Areas/Saler/Views/Shared/_Layout.cshtml";
+}
+
+<div class="row">
+    <div class="col-md-12">
+        <!-- Header -->
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <div>
+                <h4>
+                    <i class="fas fa-undo"></i> Chi tiết phiếu trả hàng
+                    <span class="text-muted">#@Model.ReturnReceiptID.ToString().Substring(0, 8).ToUpper()</span>
+                </h4>
+                <nav aria-label="breadcrumb">
+                    <ol class="breadcrumb">
+                        <li class="breadcrumb-item">
+                            <a href="@Url.Action("Index")">Phiếu trả hàng</a>
+                        </li>
+                        <li class="breadcrumb-item active">Chi tiết</li>
+                    </ol>
+                </nav>
+            </div>
+            <div class="btn-group">
+                <button type="button" class="btn btn-outline-primary" onclick="window.print()">
+                    <i class="fas fa-print"></i> In phiếu
+                </button>
+                @if (Model.Status == "Progressing")
+                {
+                    <button type="button" class="btn btn-success"
+                        onclick="updateStatus('@Model.ReturnReceiptID', 'Completed')">
+                        <i class="fas fa-check"></i> Hoàn thành
+                    </button>
+                    <button type="button" class="btn btn-danger"
+                        onclick="updateStatus('@Model.ReturnReceiptID', 'Cancelled')">
+                        <i class="fas fa-times"></i> Hủy
+                    </button>
+                }
+            </div>
+        </div>
+
+        <!-- Status Alert -->
+        <div class="row mb-4">
+            <div class="col-md-12">
+                @if (Model.Status == "Progressing")
+                {
+                    <div class="alert alert-warning">
+                        <i class="fas fa-clock"></i> Phiếu trả hàng đang trong quá trình xử lý
+                    </div>
+                }
+                else if (Model.Status == "Completed")
+                {
+                    <div class="alert alert-success">
+                        <i class="fas fa-check-circle"></i> Phiếu trả hàng đã được hoàn thành
+                    </div>
+                }
+                else if (Model.Status == "Cancelled")
+                {
+                    <div class="alert alert-danger">
+                        <i class="fas fa-times-circle"></i> Phiếu trả hàng đã bị hủy
+                    </div>
+                }
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="row">
+            <!-- Left Column - Return Receipt Info -->
+            <div class="col-md-8">
+                <!-- Return Receipt Details -->
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h6><i class="fas fa-info-circle"></i> Thông tin phiếu trả</h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <table class="table table-borderless">
+                                    <tr>
+                                        <td><strong>Mã phiếu trả:</strong></td>
+                                        <td class="text-primary">
+                                            #@Model.ReturnReceiptID.ToString().Substring(0, 8).ToUpper()
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>Ngày tạo:</strong></td>
+                                        <td>@Model.Date.ToString("dd/MM/yyyy HH:mm")</td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>Trạng thái:</strong></td>
+                                        <td>
+                                            @if (Model.Status == "Progressing")
+                                            {
+                                                <span class="badge bg-warning">Đang xử lý</span>
+                                            }
+                                            else if (Model.Status == "Completed")
+                                            {
+                                                <span class="badge bg-success">Đã hoàn thành</span>
+                                            }
+                                            else if (Model.Status == "Cancelled")
+                                            {
+                                                <span class="badge bg-danger">Đã hủy</span>
+                                            }
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>Nhân viên tạo:</strong></td>
+                                        <td>@Model.User?.Username</td>
+                                    </tr>
+                                </table>
+                            </div>
+                            <div class="col-md-6">
+                                <table class="table table-borderless">
+                                    <tr>
+                                        <td><strong>Đơn hàng gốc:</strong></td>
+                                        <td>
+                                            <a href="@Url.Action("Receipt", "Order", new { id = Model.Order.OrderID })"
+                                                class="text-info">
+                                                #@Model.Order.OrderID.ToString().Substring(0, 8).ToUpper()
+                                            </a>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>Ngày đặt hàng:</strong></td>
+                                        <td>@Model.Order.OrderDate.ToString("dd/MM/yyyy HH:mm")</td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>Tổng tiền hoàn:</strong></td>
+                                        <td>
+                                            <strong class="text-success">
+                                                @Model.TotalRefundAmount.ToString("N0") VND
+                                            </strong>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>Số sản phẩm trả:</strong></td>
+                                        <td>
+                                            <span class="badge bg-info">
+                                                @Model.ReturnReceiptDetails.Sum(d => d.Quantity)
+                                            </span>
+                                        </td>
+                                    </tr>
+                                </table>
+                            </div>
+                        </div>
+
+                        <!-- Reason -->
+                        <div class="row mt-3">
+                            <div class="col-md-12">
+                                <h6><i class="fas fa-comment"></i> Lý do trả hàng:</h6>
+                                <div class="bg-light p-3 rounded">
+                                    @Model.Reason
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Return Items Table -->
+                <div class="card">
+                    <div class="card-header">
+                        <h6><i class="fas fa-list"></i> Danh sách sản phẩm trả</h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Sản phẩm</th>
+                                        <th>Size</th>
+                                        <th>Đơn giá</th>
+                                        <th>Số lượng</th>
+                                        <th>Thành tiền</th>
+                                        <th>Ghi chú</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var detail in Model.ReturnReceiptDetails)
+                                    {
+                                        <tr>
+                                            <td>
+                                                <div class="d-flex align-items-center">
+                                                    @if (!string.IsNullOrEmpty(detail.Product.Image))
+                                                    {
+                                                        <img src="@detail.Product.Image" class="img-thumbnail me-3"
+                                                            style="width: 50px; height: 50px;">
+                                                    }
+                                                    <div>
+                                                        <strong>@detail.Product.ProductName</strong>
+                                                        <br>
+                                                        <small class="text-muted">
+                                                            ID: @detail.Product.ProductID.ToString().Substring(0, 8)
+                                                        </small>
+                                                    </div>
+                                                </div>
+                                            </td>
+                                            <td>
+                                                <span class="badge bg-secondary">@detail.Size</span>
+                                            </td>
+                                            <td>@detail.UnitPrice.ToString("N0") VND</td>
+                                            <td>
+                                                <span class="badge bg-info">@detail.Quantity</span>
+                                            </td>
+                                            <td>
+                                                <strong class="text-success">
+                                                    @detail.RefundAmount.ToString("N0") VND
+                                                </strong>
+                                            </td>
+                                            <td>
+                                                @if (!string.IsNullOrEmpty(detail.Note))
+                                                {
+                                                    <small class="text-muted">@detail.Note</small>
+                                                }
+                                                else
+                                                {
+                                                    <span class="text-muted">-</span>
+                                                }
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                                <tfoot class="table-warning">
+                                    <tr>
+                                        <th colspan="3">Tổng cộng</th>
+                                        <th>
+                                            <span class="badge bg-primary">
+                                                @Model.ReturnReceiptDetails.Sum(d => d.Quantity)
+                                            </span>
+                                        </th>
+                                        <th>
+                                            <strong class="text-success">
+                                                @Model.TotalRefundAmount.ToString("N0") VND
+                                            </strong>
+                                        </th>
+                                        <th></th>
+                                    </tr>
+                                </tfoot>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Column - Customer & Order Info -->
+            <div class="col-md-4">
+                <!-- Customer Information -->
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h6><i class="fas fa-user"></i> Thông tin khách hàng</h6>
+                    </div>
+                    <div class="card-body">
+                        @if (Model.Order.Customer != null)
+                        {
+                            <div class="text-center mb-3">
+                                <i class="fas fa-user-circle fa-3x text-primary"></i>
+                            </div>
+                            <table class="table table-borderless">
+                                <tr>
+                                    <td><strong>Tên:</strong></td>
+                                    <td>@Model.Order.Customer.Name</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>SĐT:</strong></td>
+                                    <td>@Model.Order.Customer.Phone</td>
+                                </tr>
+                                @if (!string.IsNullOrEmpty(Model.Order.Customer.Email))
+                                {
+                                    <tr>
+                                        <td><strong>Email:</strong></td>
+                                        <td>@Model.Order.Customer.Email</td>
+                                    </tr>
+                                }
+                            </table>
+                        }
+                        else
+                        {
+                            <div class="text-center">
+                                <i class="fas fa-user-slash fa-3x text-muted mb-3"></i>
+                                <p class="text-muted">Khách lẻ</p>
+                            </div>
+                        }
+                    </div>
+                </div>
+
+                <!-- Order Summary -->
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h6><i class="fas fa-shopping-bag"></i> Tóm tắt đơn hàng gốc</h6>
+                    </div>
+                    <div class="card-body">
+                        <table class="table table-borderless">
+                            <tr>
+                                <td><strong>Tổng tiền đơn hàng:</strong></td>
+                                <td class="text-end">
+                                    <strong>@Model.Order.TotalPrice.ToString("N0") VND</strong>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td><strong>Số tiền hoàn trả:</strong></td>
+                                <td class="text-end">
+                                    <strong class="text-success">
+                                        @Model.TotalRefundAmount.ToString("N0") VND
+                                    </strong>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td><strong>Phần trăm hoàn trả:</strong></td>
+                                <td class="text-end">
+                                    <strong class="text-warning">
+                                        @(((Model.TotalRefundAmount / Model.Order.TotalPrice) * 100).ToString("F1"))%
+                                    </strong>
+                                </td>
+                            </tr>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Actions -->
+                <div class="card">
+                    <div class="card-header">
+                        <h6><i class="fas fa-cogs"></i> Thao tác</h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="d-grid gap-2">
+                            <a href="@Url.Action("Index")" class="btn btn-secondary">
+                                <i class="fas fa-arrow-left"></i> Quay lại danh sách
+                            </a>
+                            <button type="button" class="btn btn-info" onclick="window.print()">
+                                <i class="fas fa-print"></i> In phiếu trả
+                            </button>
+                            @if (Model.Status == "Progressing")
+                            {
+                                <button type="button" class="btn btn-success"
+                                    onclick="updateStatus('@Model.ReturnReceiptID', 'Completed')">
+                                    <i class="fas fa-check"></i> Hoàn thành
+                                </button>
+                                <button type="button" class="btn btn-danger"
+                                    onclick="updateStatus('@Model.ReturnReceiptID', 'Cancelled')">
+                                    <i class="fas fa-times"></i> Hủy
+                                </button>
+                            }
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Status Update Modal -->
+<div class="modal fade" id="statusUpdateModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Cập nhật trạng thái</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p id="statusUpdateMessage">Bạn có chắc chắn muốn cập nhật trạng thái phiếu trả này?</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
+                <button type="button" class="btn btn-primary" id="confirmStatusUpdate">Xác nhận</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        let currentReturnReceiptId = null;
+        let currentStatus = null;
+
+        $(document).ready(function () {
+            // Show success message if exists
+            @if (TempData["SuccessMessage"] != null)
+                {
+                    <text>
+                        toastr.success('@TempData["SuccessMessage"]');
+                    </text>
+            }
+                        });
+
+        function updateStatus(returnReceiptId, newStatus) {
+            currentReturnReceiptId = returnReceiptId;
+            currentStatus = newStatus;
+
+            const statusText = newStatus === 'Completed' ? 'hoàn thành' : 'hủy';
+            $('#statusUpdateMessage').text(`Bạn có chắc chắn muốn ${statusText} phiếu trả này?`);
+
+            $('#statusUpdateModal').modal('show');
+        }
+
+        $('#confirmStatusUpdate').click(function () {
+            if (currentReturnReceiptId && currentStatus) {
+                $.post('@Url.Action("UpdateStatus")', {
+                    id: currentReturnReceiptId,
+                    status: currentStatus,
+                    __RequestVerificationToken: $('input[name="__RequestVerificationToken"]').val()
+                })
+                    .done(function (response) {
+                        if (response.success) {
+                            toastr.success('Cập nhật trạng thái thành công!');
+                            setTimeout(() => {
+                                location.reload();
+                            }, 1000);
+                        } else {
+                            toastr.error('Có lỗi xảy ra khi cập nhật trạng thái');
+                        }
+                    })
+                    .fail(function () {
+                        toastr.error('Có lỗi xảy ra khi cập nhật trạng thái');
+                    });
+            }
+
+            $('#statusUpdateModal').modal('hide');
+        });
+    </script>
+}
+
+<!-- Print Styles -->
+<style>
+    @@media print {
+
+        .btn,
+        .btn-group,
+        .breadcrumb,
+        .card-header {
+            display: none !important;
+        }
+
+        .card {
+            border: none !important;
+            box-shadow: none !important;
+        }
+
+        .page-break {
+            page-break-after: always;
+        }
+
+        body {
+            font-size: 12px;
+        }
+
+        .table {
+            font-size: 11px;
+        }
+
+        .badge {
+            background-color: #6c757d !important;
+            color: white !important;
+        }
+    }
+
+    .table-borderless td {
+        border: none !important;
+        padding: 0.25rem 0.5rem;
+    }
+
+    .img-thumbnail {
+        border: 1px solid #dee2e6;
+        border-radius: 0.25rem;
+        padding: 0.25rem;
+    }
+
+    .card {
+        box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+        border: 1px solid rgba(0, 0, 0, 0.125);
+    }
+
+    .table-hover tbody tr:hover {
+        background-color: rgba(0, 0, 0, 0.03);
+    }
+</style>

@@ -84,7 +84,7 @@
                                             </div>
                                         </td>
                                         <td>
-                                            <span class="badge bg-info">@returnReceipt.Quantity</span>
+                                            <span class="badge bg-info">@returnReceipt.ReturnReceiptDetails.Sum(q => q.Quantity)</span>
                                         </td>
                                         <td>
                                             @switch (returnReceipt.Status)
