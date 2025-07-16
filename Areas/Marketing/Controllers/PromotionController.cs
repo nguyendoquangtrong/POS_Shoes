@@ -29,9 +29,9 @@ namespace POS_Shoes.Areas.Marketing.Controllers
             var activePromotionProductIds = await _context.PromotionDetails
                 .Include(pd => pd.Promotion)
                 .Where(pd => pd.Promotion.IsActive &&
-                           pd.Promotion.Status == "Approved" && // ✅ Chỉ tính promotion đã được approve
-                           pd.Promotion.StartDate <= DateTime.Now &&
-                           pd.Promotion.EndDate >= DateTime.Now)
+                            pd.Promotion.Status == "Approved" &&
+                            pd.Promotion.StartDate <= DateTime.Now &&
+                            pd.Promotion.EndDate >= DateTime.Now)
                 .Select(pd => pd.ProductID)
                 .ToListAsync();
 

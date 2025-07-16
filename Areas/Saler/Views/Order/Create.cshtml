@@ -341,13 +341,83 @@
         let selectedProduct = null;
         let productSizes = [];
         let currentSelectedSize = null;
-        let searchTimeout;
         let foundCustomer = null;
 
-        // ✅ Products data từ ViewBag
+        // === Tìm kiếm khách hàng theo số điện thoại ===
+        $('#searchPhoneBtn').on('click', searchCustomerByPhone);
+        $('#phoneSearchInput').on('keypress', function (e) {
+            if (e.which === 13) searchCustomerByPhone();
+        });
+        $('#phoneSearchInput').on('input', function () {
+            $('#searchResult').hide();
+            $('#searchStatus').empty();
+            foundCustomer = null;
+        });
+
+        function searchCustomerByPhone() {
+            const phone = $('#phoneSearchInput').val().trim();
+            if (phone.length < 7) {
+                $('#searchStatus').html('<span class="text-danger">Nhập số điện thoại hợp lệ.</span>');
+                $('#searchResult').hide();
+                return;
+            }
+            $('#searchStatus').html('<span class="text-info">Đang tìm kiếm...</span>');
+            $.get('/Saler/Order/FindCustomerByPhone', { phone })
+                .done(function (res) {
+                    $('#foundCustomerName').text(res.name);
+                    $('#foundCustomerPhone').text(res.phone);
+                    $('#searchResult').show();
+                    $('#searchStatus').empty();
+                    foundCustomer = res;
+                })
+                .fail(function (xhr) {
+                    let msg = "Không tìm thấy khách hàng";
+                    if (xhr.responseJSON && xhr.responseJSON !== "")
+                        msg = xhr.responseJSON;
+                    else if (xhr.responseText)
+                        msg = xhr.responseText;
+                    $('#searchStatus').html(`<span class="text-danger">${msg}</span>`);
+                    $('#searchResult').hide();
+                    foundCustomer = null;
+                });
+        }
+
+        $('#selectFoundCustomer').on('click', function () {
+            if (foundCustomer) {
+                $('#customerSelect').val(foundCustomer.customerID);
+                $('#searchResult').hide();
+                $('#searchStatus').html('<span class="text-success">Đã chọn khách hàng!</span>');
+            }
+        });
+
+
+        // === QUICK PAY, cập nhật tiền thừa ===
+        function quickPay(amount) {
+            let total = parseInt($('#totalAmountInput').val()) || 0;
+            if (amount === 0) {
+                $('#customerPaidInput').val(total);
+            } else {
+                let currentPaid = parseInt($('#customerPaidInput').val()) || 0;
+                $('#customerPaidInput').val(currentPaid + amount);
+            }
+            updateChangeAmount();
+        }
+
+        $('#customerPaidInput').on('input', function () {
+            updateChangeAmount();
+        });
+
+        function updateChangeAmount() {
+            let paid = parseInt($('#customerPaidInput').val()) || 0;
+            let total = parseInt($('#totalAmountInput').val()) || 0;
+            let change = paid - total;
+            $('#changeAmount').text((change > 0 ? change.toLocaleString() : 0) + ' VND');
+        }
+
+
+        // === PRODUCTS DATA ===
         const productsData = @Html.Raw(Json.Serialize(ViewBag.ProductsForJs));
 
-        // ✅ Discount Calculation Function
         function calculateDiscountedPrice(originalPrice, discountPercent) {
             if (discountPercent > 0) {
                 return originalPrice * (1 - discountPercent / 100);
@@ -355,10 +425,9 @@
             return originalPrice;
         }
 
-        // ✅ Select product function - CẬP NHẬT
-        function selectProduct(productId, productName, price, discount = 0, promotionId = null) {
-            console.log('selectProduct called:', { productId, productName, price, discount, promotionId });
+        // === Sản phẩm & giỏ hàng ===
 
+        function selectProduct(productId, productName, price, discount = 0, promotionId = null) {
             const originalPrice = parseFloat(price);
             const discountPercent = parseFloat(discount);
             const discountedPrice = calculateDiscountedPrice(originalPrice, discountPercent);
@@ -372,21 +441,16 @@
                 promotionId: promotionId
             };
 
-            // ✅ Get product from productsData
+            // Lấy chi tiết sản phẩm từ productsData
             const product = productsData.find(p => p.productID === productId);
             if (product) {
                 productSizes = product.productSizes || [];
                 selectedProduct.image = product.image;
                 selectedProduct.barcode = product.barcode;
-
-                console.log('Product found:', product);
-                console.log('Product sizes:', productSizes);
             } else {
-                console.error('Product not found in productsData:', productId);
                 productSizes = [];
             }
 
-            // ✅ Check if product has sizes
             if (productSizes.length > 0) {
                 showProductModal();
             } else {
@@ -394,29 +458,17 @@
             }
         }
 
-        // ✅ Show product modal function
         function showProductModal() {
-            if (!selectedProduct) {
-                console.error('No selected product');
-                return;
-            }
+            if (!selectedProduct) return;
 
-            console.log('Showing modal for product:', selectedProduct);
-
-            // Set product image
-            if (selectedProduct.image) {
-                $('#modalProductImage').attr('src', selectedProduct.image);
-            } else {
-                $('#modalProductImage').attr('src', '/images/no-image.png');
-            }
-
-            // Set product name
+            // Hình ảnh
+            $('#modalProductImage').attr('src', selectedProduct.image || '/images/no-image.png');
+            // Tên sản phẩm
             $('#modalProductName').text(selectedProduct.name);
-
-            // Set brand
+            // Thương hiệu
             $('#modalProductBrand').text('Nike');
 
-            // Set price with discount display
+            // Giá & khuyến mãi
             if (selectedProduct.discountPercent > 0) {
                 $('#modalPrice').text(selectedProduct.price.toLocaleString() + ' VND').removeClass('text-success').addClass('text-danger');
                 $('#modalOriginalPrice').text(selectedProduct.originalPrice.toLocaleString() + ' VND').show();
@@ -427,7 +479,7 @@
                 $('#modalDiscountBadge').hide();
             }
 
-            // ✅ Populate size dropdown
+            // Size dropdown
             let sizeOptionsHtml = '';
             productSizes.forEach(function (size) {
                 if (size.quantity > 0) {
@@ -436,32 +488,26 @@
             });
             $('#modalSizeSelect').html(sizeOptionsHtml);
 
-            // Set initial stock for first size
-            if (productSizes.length > 0) {
-                const firstSize = productSizes.find(s => s.quantity > 0);
-                if (firstSize) {
-                    $('#modalStock').text(firstSize.quantity);
-                    currentSelectedSize = firstSize.size;
-                }
+            // Chọn stock đầu tiên
+            const firstSize = productSizes.find(s => s.quantity > 0);
+            if (firstSize) {
+                $('#modalStock').text(firstSize.quantity);
+                currentSelectedSize = firstSize.size;
             }
 
-            // Reset quantity and note
+            // Reset SL, note
             $('#modalQuantityInput').val(1);
             $('#modalNote').val('');
 
-            // ✅ Show modal
             $('#productModal').modal('show');
         }
 
-        // ✅ Handle size selection change
         $('#modalSizeSelect').on('change', function () {
             const selectedSize = $(this).val();
             const sizeData = productSizes.find(s => s.size === selectedSize);
             if (sizeData) {
                 $('#modalStock').text(sizeData.quantity);
                 currentSelectedSize = selectedSize;
-
-                // Reset quantity if it exceeds stock
                 const currentQuantity = parseInt($('#modalQuantityInput').val());
                 if (currentQuantity > sizeData.quantity) {
                     $('#modalQuantityInput').val(sizeData.quantity);
@@ -469,20 +515,15 @@
             }
         });
 
-        // ✅ Change quantity function
         function changeQuantity(change) {
             const currentQuantity = parseInt($('#modalQuantityInput').val()) || 1;
             const newQuantity = currentQuantity + change;
-
-            // Get current stock
             const currentStock = parseInt($('#modalStock').text());
-
             if (newQuantity >= 1 && newQuantity <= currentStock) {
                 $('#modalQuantityInput').val(newQuantity);
             }
         }
 
-        // ✅ Add to cart from modal
         function addToCartFromModal() {
             if (!selectedProduct || !currentSelectedSize) {
                 alert('Vui lòng chọn size!');
@@ -492,15 +533,13 @@
             const quantity = parseInt($('#modalQuantityInput').val()) || 1;
             const note = $('#modalNote').val();
 
-            // Check if product with same size already exists in cart
             const existingItemIndex = cart.findIndex(item =>
-                item.productId === selectedProduct.id && item.size === currentSelectedSize);
+                item.productId === selectedProduct.id && item.size === currentSelectedSize
+            );
 
             if (existingItemIndex >= 0) {
                 cart[existingItemIndex].quantity += quantity;
-                if (note) {
-                    cart[existingItemIndex].note = note;
-                }
+                if (note) cart[existingItemIndex].note = note;
             } else {
                 cart.push({
                     productId: selectedProduct.id,
@@ -521,7 +560,6 @@
             currentSelectedSize = null;
         }
 
-        // ✅ Update cart display
         function updateCartDisplay() {
             let cartHtml = '';
             let total = 0;
@@ -538,52 +576,46 @@
                 totalDiscount += itemDiscount;
 
                 cartHtml += `
-                                                    <div class="cart-item mb-2 p-2 border rounded">
-                                                        <div class="d-flex justify-content-between align-items-start">
-                                                            <div>
-                                                                <h6 class="mb-1">${item.productName}</h6>
-                                                                <small class="text-muted">Size: ${item.size}</small><br>
-                                                                ${item.note ? `<small class="text-info">Note: ${item.note}</small><br>` : ''}
-                                                                ${item.discountPercent > 0 ?
+                    <div class="cart-item mb-2 p-2 border rounded">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div>
+                                <h6 class="mb-1">${item.productName}</h6>
+                                <small class="text-muted">Size: ${item.size}</small><br>
+                                ${item.note ? `<small class="text-info">Note: ${item.note}</small><br>` : ''}
+                                ${item.discountPercent > 0 ?
                         `<small class="text-success">Giảm ${item.discountPercent}%</small><br>
-                                                                    <small class="text-muted"><del>${item.originalPrice.toLocaleString()} VND</del></small><br>
-                                                                    <small class="text-danger">${item.unitPrice.toLocaleString()} × ${item.quantity} = ${subtotal.toLocaleString()} VND</small>` :
+                            <small class="text-muted"><del>${item.originalPrice.toLocaleString()} VND</del></small><br>
+                            <small class="text-danger">${item.unitPrice.toLocaleString()} × ${item.quantity} = ${subtotal.toLocaleString()} VND</small>` :
                         `<small>${item.unitPrice.toLocaleString()} × ${item.quantity} = ${subtotal.toLocaleString()} VND</small>`
                     }
-                                                            </div>
-                                                            <div>
-                                                                <button type="button" class="btn btn-sm btn-outline-secondary" 
-                                                                        onclick="updateQuantity(${index}, -1)">-</button>
-                                                                <span class="mx-2">${item.quantity}</span>
-                                                                <button type="button" class="btn btn-sm btn-outline-secondary" 
-                                                                        onclick="updateQuantity(${index}, 1)">+</button>
-                                                                <button type="button" class="btn btn-sm btn-outline-danger ms-2" 
-                                                                        onclick="removeFromCart(${index})">
-                                                                    <i class="fas fa-trash"></i>
-                                                                </button>
-                                                            </div>
-                                                        </div>
-                                                        <input type="hidden" name="OrderItems[${index}].ProductID" value="${item.productId}">
-                                                        <input type="hidden" name="OrderItems[${index}].ProductName" value="${item.productName}">
-                                                        <input type="hidden" name="OrderItems[${index}].Size" value="${item.size}">
-                                                        <input type="hidden" name="OrderItems[${index}].UnitPrice" value="${item.unitPrice}">
-                                                        <input type="hidden" name="OrderItems[${index}].Quantity" value="${item.quantity}">
-                                                    </div>
-                                                `;
+                            </div>
+                            <div>
+                                <button type="button" class="btn btn-sm btn-outline-secondary" onclick="updateQuantity(${index}, -1)">-</button>
+                                <span class="mx-2">${item.quantity}</span>
+                                <button type="button" class="btn btn-sm btn-outline-secondary" onclick="updateQuantity(${index}, 1)">+</button>
+                                <button type="button" class="btn btn-sm btn-outline-danger ms-2" onclick="removeFromCart(${index})">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <input type="hidden" name="OrderItems[${index}].ProductID" value="${item.productId}">
+                        <input type="hidden" name="OrderItems[${index}].ProductName" value="${item.productName}">
+                        <input type="hidden" name="OrderItems[${index}].Size" value="${item.size}">
+                        <input type="hidden" name="OrderItems[${index}].UnitPrice" value="${item.unitPrice}">
+                        <input type="hidden" name="OrderItems[${index}].Quantity" value="${item.quantity}">
+                    </div>
+                `;
             });
 
             $('#cartItems').html(cartHtml);
-
-            // Update totals
             $('#originalTotalAmount').text(originalTotal.toLocaleString() + ' VND');
             $('#totalDiscount').text(totalDiscount.toLocaleString() + ' VND');
             $('#totalAmount').text(total.toLocaleString() + ' VND');
             $('#totalAmountInput').val(total);
-
             $('#submitOrder').prop('disabled', cart.length === 0);
+            updateChangeAmount();
         }
 
-        // ✅ Other helper functions
         function updateQuantity(index, change) {
             cart[index].quantity += change;
             if (cart[index].quantity <= 0) {
@@ -602,18 +634,10 @@
             updateCartDisplay();
         }
 
-        // ✅ Initialize when document ready
+        // === Init document ===
         $(document).ready(function () {
-            console.log('Document ready');
-            console.log('Products data:', productsData);
-
-            // Test if jQuery and Bootstrap are loaded
-            if (typeof $ === 'undefined') {
-                console.error('jQuery is not loaded!');
-            }
-            if (typeof bootstrap === 'undefined') {
-                console.error('Bootstrap is not loaded!');
-            }
+            // ...
         });
     </script>
+
 }

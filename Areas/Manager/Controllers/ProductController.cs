@@ -1,10 +1,13 @@
-// Areas/Manager/Controllers/ProductController.cs
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
 using POS_Shoes.Models.Data;
 using POS_Shoes.Models.Entities;
 using POS_Shoes.Services.Interfaces;
+using Microsoft.AspNetCore.Http;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
 
 namespace POS_Shoes.Areas.Manager.Controllers
 {
@@ -18,147 +21,98 @@ namespace POS_Shoes.Areas.Manager.Controllers
             _cloudinaryService = cloudinaryService;
         }
 
-        // GET: Manager/Product/Create - CẬP NHẬT
-        public async Task<IActionResult> Create()
+        // GET: Manager/Product/Index
+        public async Task<IActionResult> Index()
         {
+            var products = await _context.Products
+                .Include(p => p.ProductSizes)
+                .ToListAsync();
+            return View(products);
+        }
+
+        // GET: Manager/Product/Create
+        public IActionResult Create() => View();
+
+        // POST: Manager/Product/Create
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Create(
+            [Bind("ProductName,Price,Barcode,Supplier,Status")] Product product,
+            IFormFile? imageFile, List<string> sizes, List<int> quantities)
+        {
+            if (!ModelState.IsValid) return View(product);
+
+            using var transaction = await _context.Database.BeginTransactionAsync();
             try
             {
-                // Lấy danh sách promotions an toàn
-                var promotions = await _context.Promotions
-                    .Where(p => p.IsActive &&
-                               p.StartDate <= DateTime.Now &&
-                               p.EndDate >= DateTime.Now)
-                    .OrderBy(p => p.Name)
-                    .ToListAsync();
+                product.ProductID = Guid.NewGuid();
 
-                ViewData["PromotionID"] = new SelectList(
-                    promotions ?? new List<Promotion>(),
-                    "PromotionID",
-                    "Name"
-                );
+                // Upload image
+                if (imageFile != null && imageFile.Length > 0)
+                {
+                    try
+                    {
+                        var uploadResult = await _cloudinaryService.UploadImageAsync(imageFile, "products");
+                        product.Image = uploadResult.SecureUrl.ToString();
+                        product.ImagePublicId = uploadResult.PublicId;
+                    }
+                    catch (Exception ex)
+                    {
+                        TempData["Error"] = $"Lỗi upload hình ảnh: {ex.Message}";
+                        return View(product);
+                    }
+                }
 
-                return View();
+                _context.Add(product);
+
+                for (int i = 0; i < sizes.Count; i++)
+                {
+                    if (!string.IsNullOrEmpty(sizes[i]) && quantities[i] > 0)
+                    {
+                        _context.ProductSizes.Add(new ProductSize
+                        {
+                            SizeID = Guid.NewGuid(),
+                            ProductID = product.ProductID,
+                            Size = sizes[i],
+                            Quantity = quantities[i]
+                        });
+                    }
+                }
+
+                await _context.SaveChangesAsync();
+                await transaction.CommitAsync();
+
+                TempData["Success"] = "Tạo sản phẩm thành công!";
+                return RedirectToAction(nameof(Index));
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Error loading promotions: {ex.Message}");
-                ViewData["PromotionID"] = new SelectList(new List<Promotion>(), "PromotionID", "Name");
-                TempData["Warning"] = "Không thể tải danh sách khuyến mãi. Vui lòng thử lại.";
-                return View();
+                await transaction.RollbackAsync();
+                TempData["Error"] = $"Lỗi tạo sản phẩm: {ex.Message}";
             }
-        }
-
-        // POST: Manager/Product/Create - CẬP NHẬT
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create([Bind("ProductName,Price,Barcode,Supplier,Status")] Product product,
-            IFormFile? imageFile, List<string> sizes, List<int> quantities, Guid? promotionId)
-        {
-            if (ModelState.IsValid)
-            {
-                using var transaction = await _context.Database.BeginTransactionAsync();
-                try
-                {
-                    product.ProductID = Guid.NewGuid();
-
-                    // Handle image upload to Cloudinary
-                    if (imageFile != null && imageFile.Length > 0)
-                    {
-                        try
-                        {
-                            var uploadResult = await _cloudinaryService.UploadImageAsync(imageFile, "products");
-                            product.Image = uploadResult.SecureUrl.ToString();
-                            product.ImagePublicId = uploadResult.PublicId;
-                        }
-                        catch (Exception ex)
-                        {
-                            TempData["Error"] = $"Lỗi upload hình ảnh: {ex.Message}";
-                            await LoadPromotionsForView(promotionId);
-                            return View(product);
-                        }
-                    }
-
-                    // Add product
-                    _context.Add(product);
-
-                    // Add product sizes
-                    for (int i = 0; i < sizes.Count; i++)
-                    {
-                        if (!string.IsNullOrEmpty(sizes[i]) && quantities[i] > 0)
-                        {
-                            var productSize = new ProductSize
-                            {
-                                SizeID = Guid.NewGuid(),
-                                ProductID = product.ProductID,
-                                Size = sizes[i],
-                                Quantity = quantities[i]
-                            };
-                            _context.ProductSizes.Add(productSize);
-                        }
-                    }
-
-                    // ✅ Xử lý promotion thông qua PromotionDetails
-                    if (promotionId.HasValue && promotionId.Value != Guid.Empty)
-                    {
-                        var promotionDetail = new PromotionDetails
-                        {
-                            PromotionDetailsID = Guid.NewGuid(),
-                            PromotionID = promotionId.Value,
-                            ProductID = product.ProductID,
-                        };
-                        _context.PromotionDetails.Add(promotionDetail);
-                    }
-
-                    await _context.SaveChangesAsync();
-                    await transaction.CommitAsync();
-
-                    TempData["Success"] = "Tạo sản phẩm thành công!";
-                    return RedirectToAction(nameof(Index));
-                }
-                catch (Exception ex)
-                {
-                    await transaction.RollbackAsync();
-                    TempData["Error"] = $"Lỗi tạo sản phẩm: {ex.Message}";
-                    Console.WriteLine($"Create Error: {ex}");
-                }
-            }
-
-            await LoadPromotionsForView(promotionId);
             return View(product);
         }
 
-        // GET: Manager/Product/Edit/5 - CẬP NHẬT
+        // GET: Manager/Product/Edit/5
         public async Task<IActionResult> Edit(Guid? id)
         {
             if (id == null) return NotFound();
-
             var product = await _context.Products
                 .Include(p => p.ProductSizes)
                 .FirstOrDefaultAsync(p => p.ProductID == id);
 
-            if (product == null) return NotFound();
-
-            // ✅ Lấy promotion hiện tại từ PromotionDetails
-            var currentPromotion = await _context.PromotionDetails
-                .Where(pd => pd.ProductID == id.Value)
-                .Select(pd => pd.PromotionID)
-                .FirstOrDefaultAsync();
-
-            await LoadPromotionsForView(currentPromotion == Guid.Empty ? null : currentPromotion);
-            ViewBag.CurrentPromotionId = currentPromotion;
-
-            return View(product);
+            return product == null ? NotFound() : View(product);
         }
 
-        // POST: Manager/Product/Edit/5 - CẬP NHẬT
+        // POST: Manager/Product/Edit/5
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(Guid id,
-            [Bind("ProductID,ProductName,Price,Barcode,Supplier,Status,Image,ImagePublicId")]
-            Product product, IFormFile? imageFile,
+        public async Task<IActionResult> Edit(
+            Guid id,
+            [Bind("ProductID,ProductName,Price,Barcode,Supplier,Status,Image,ImagePublicId")] Product product,
+            IFormFile? imageFile,
             List<Guid>? existingSizeIds, List<string>? existingSizes, List<int>? existingQuantities,
-            List<string>? newSizes, List<int>? newQuantities,
-            List<Guid>? deletedSizeIds, Guid? promotionId)
+            List<string>? newSizes, List<int>? newQuantities, List<Guid>? deletedSizeIds)
         {
             if (id != product.ProductID) return NotFound();
             CleanupModelStateForSizes();
@@ -173,17 +127,16 @@ namespace POS_Shoes.Areas.Manager.Controllers
                         .FirstOrDefaultAsync(p => p.ProductID == id);
 
                     if (existingProduct == null) return NotFound();
-
                     var oldImagePublicId = existingProduct.ImagePublicId;
 
-                    // Update basic product info
+                    // Update basic info
                     existingProduct.ProductName = product.ProductName;
                     existingProduct.Price = product.Price;
                     existingProduct.Barcode = product.Barcode;
                     existingProduct.Supplier = product.Supplier;
                     existingProduct.Status = product.Status;
 
-                    // Handle image upload
+                    // Image upload
                     if (imageFile != null && imageFile.Length > 0)
                     {
                         try
@@ -192,15 +145,11 @@ namespace POS_Shoes.Areas.Manager.Controllers
                             existingProduct.Image = uploadResult.SecureUrl.ToString();
                             existingProduct.ImagePublicId = uploadResult.PublicId;
 
-                            // Delete old image from Cloudinary
                             if (!string.IsNullOrEmpty(oldImagePublicId))
                             {
                                 _ = Task.Run(async () =>
                                 {
-                                    try
-                                    {
-                                        await _cloudinaryService.DeleteImageAsync(oldImagePublicId);
-                                    }
+                                    try { await _cloudinaryService.DeleteImageAsync(oldImagePublicId); }
                                     catch (Exception ex)
                                     {
                                         Console.WriteLine($"Failed to delete old image: {ex.Message}");
@@ -212,17 +161,16 @@ namespace POS_Shoes.Areas.Manager.Controllers
                         {
                             TempData["Error"] = $"Lỗi upload hình ảnh: {ex.Message}";
                             await transaction.RollbackAsync();
-                            await LoadPromotionsForView(promotionId);
                             return View(existingProduct);
                         }
                     }
 
-                    // ✅ Xử lý promotion thông qua PromotionDetails
-                    await HandlePromotionUpdate(id, promotionId);
-
-                    // Handle Size Updates
-                    await HandleSizeUpdates(existingProduct, deletedSizeIds, existingSizeIds,
-                        existingSizes, existingQuantities, newSizes, newQuantities);
+                    await HandleSizeUpdates(
+                        existingProduct,
+                        deletedSizeIds, existingSizeIds,
+                        existingSizes, existingQuantities,
+                        newSizes, newQuantities
+                    );
 
                     await _context.SaveChangesAsync();
                     await transaction.CommitAsync();
@@ -234,7 +182,6 @@ namespace POS_Shoes.Areas.Manager.Controllers
                 {
                     await transaction.RollbackAsync();
                     TempData["Error"] = $"Lỗi cập nhật: {ex.Message}";
-                    Console.WriteLine($"Edit Error: {ex}");
                 }
             }
 
@@ -242,30 +189,10 @@ namespace POS_Shoes.Areas.Manager.Controllers
                 .Include(p => p.ProductSizes)
                 .FirstOrDefaultAsync(p => p.ProductID == id);
 
-            await LoadPromotionsForView(promotionId);
             return View(productWithSizes ?? product);
         }
 
-        // GET: Manager/Product/Index - CẬP NHẬT
-        public async Task<IActionResult> Index()
-        {
-            var products = await _context.Products
-                .Include(p => p.ProductSizes)
-                .ToListAsync();
-
-            // ✅ Load promotion data cho mỗi product
-            var productIds = products.Select(p => p.ProductID).ToList();
-            var promotionDetails = await _context.PromotionDetails
-                .Include(pd => pd.Promotion)
-                .Where(pd => productIds.Contains(pd.ProductID))
-                .ToListAsync();
-
-            ViewBag.PromotionDetails = promotionDetails;
-
-            return View(products);
-        }
-
-        // GET: Manager/Product/Details/5 - CẬP NHẬT
+        // GET: Manager/Product/Details/5
         public async Task<IActionResult> Details(Guid? id)
         {
             if (id == null) return NotFound();
@@ -274,19 +201,10 @@ namespace POS_Shoes.Areas.Manager.Controllers
                 .Include(p => p.ProductSizes)
                 .FirstOrDefaultAsync(m => m.ProductID == id);
 
-            if (product == null) return NotFound();
-
-            // ✅ Load promotion data
-            var promotionDetail = await _context.PromotionDetails
-                .Include(pd => pd.Promotion)
-                .FirstOrDefaultAsync(pd => pd.ProductID == id);
-
-            ViewBag.PromotionDetail = promotionDetail;
-
-            return View(product);
+            return product == null ? NotFound() : View(product);
         }
 
-        // GET: Manager/Product/Delete/5 - CẬP NHẬT
+        // GET: Manager/Product/Delete/5
         public async Task<IActionResult> Delete(Guid? id)
         {
             if (id == null) return NotFound();
@@ -295,19 +213,10 @@ namespace POS_Shoes.Areas.Manager.Controllers
                 .Include(p => p.ProductSizes)
                 .FirstOrDefaultAsync(m => m.ProductID == id);
 
-            if (product == null) return NotFound();
-
-            // ✅ Load promotion data
-            var promotionDetail = await _context.PromotionDetails
-                .Include(pd => pd.Promotion)
-                .FirstOrDefaultAsync(pd => pd.ProductID == id);
-
-            ViewBag.PromotionDetail = promotionDetail;
-
-            return View(product);
+            return product == null ? NotFound() : View(product);
         }
 
-        // DELETE: Manager/Product/Delete/5 - CẬP NHẬT
+        // POST: Manager/Product/Delete/5
         [HttpPost, ActionName("Delete")]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteConfirmed(Guid id)
@@ -327,38 +236,19 @@ namespace POS_Shoes.Areas.Manager.Controllers
                 using var transaction = await _context.Database.BeginTransactionAsync();
                 try
                 {
-                    // ✅ Remove PromotionDetails first
-                    var promotionDetails = await _context.PromotionDetails
-                        .Where(pd => pd.ProductID == id)
-                        .ToListAsync();
-
-                    if (promotionDetails.Any())
-                    {
-                        _context.PromotionDetails.RemoveRange(promotionDetails);
-                    }
-
-                    // Remove associated product sizes
                     if (product.ProductSizes != null && product.ProductSizes.Any())
-                    {
                         _context.ProductSizes.RemoveRange(product.ProductSizes);
-                    }
 
-                    // Delete image from Cloudinary
                     if (!string.IsNullOrEmpty(product.ImagePublicId))
                     {
-                        try
-                        {
-                            await _cloudinaryService.DeleteImageAsync(product.ImagePublicId);
-                        }
+                        try { await _cloudinaryService.DeleteImageAsync(product.ImagePublicId); }
                         catch (Exception ex)
                         {
                             Console.WriteLine($"Failed to delete image from Cloudinary: {ex.Message}");
                         }
                     }
 
-                    // Remove the product
                     _context.Products.Remove(product);
-
                     await _context.SaveChangesAsync();
                     await transaction.CommitAsync();
 
@@ -379,71 +269,19 @@ namespace POS_Shoes.Areas.Manager.Controllers
             }
         }
 
-        // ✅ Helper method mới để xử lý promotion
-        private async Task HandlePromotionUpdate(Guid productId, Guid? promotionId)
-        {
-            // Remove existing promotion details
-            var existingPromotionDetails = await _context.PromotionDetails
-                .Where(pd => pd.ProductID == productId)
-                .ToListAsync();
+        // --- Helper Methods ---
 
-            if (existingPromotionDetails.Any())
-            {
-                _context.PromotionDetails.RemoveRange(existingPromotionDetails);
-            }
-
-            // Add new promotion detail if promotionId is provided
-            if (promotionId.HasValue && promotionId.Value != Guid.Empty)
-            {
-                var newPromotionDetail = new PromotionDetails
-                {
-                    PromotionDetailsID = Guid.NewGuid(),
-                    PromotionID = promotionId.Value,
-                    ProductID = productId,
-                };
-                _context.PromotionDetails.Add(newPromotionDetail);
-            }
-        }
-
-        // Helper method để load promotions - CẬP NHẬT
-        private async Task LoadPromotionsForView(Guid? selectedPromotionId = null)
-        {
-            try
-            {
-                var promotions = await _context.Promotions
-                    .Where(p => p.IsActive &&
-                               p.StartDate <= DateTime.Now &&
-                               p.EndDate >= DateTime.Now)
-                    .OrderBy(p => p.Name)
-                    .ToListAsync();
-
-                ViewData["PromotionID"] = new SelectList(
-                    promotions ?? new List<Promotion>(),
-                    "PromotionID",
-                    "Name",
-                    selectedPromotionId
-                );
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Error loading promotions: {ex.Message}");
-                ViewData["PromotionID"] = new SelectList(new List<Promotion>(), "PromotionID", "Name");
-            }
-        }
-
-        // Helper methods (unchanged)
-        private async Task HandleSizeUpdates(Product existingProduct,
-            List<Guid>? deletedSizeIds, List<Guid>? existingSizeIds,
-            List<string>? existingSizes, List<int>? existingQuantities,
+        private async Task HandleSizeUpdates(
+            Product existingProduct,
+            List<Guid>? deletedSizeIds,
+            List<Guid>? existingSizeIds, List<string>? existingSizes, List<int>? existingQuantities,
             List<string>? newSizes, List<int>? newQuantities)
         {
-            // Handle Size Deletions
+            // Delete sizes
             if (deletedSizeIds != null && deletedSizeIds.Any())
             {
-                var sizesToDelete = existingProduct.ProductSizes
-                    .Where(ps => deletedSizeIds.Contains(ps.SizeID))
-                    .ToList();
-                _context.ProductSizes.RemoveRange(sizesToDelete);
+                var toDelete = existingProduct.ProductSizes.Where(ps => deletedSizeIds.Contains(ps.SizeID)).ToList();
+                _context.ProductSizes.RemoveRange(toDelete);
             }
 
             // Update existing sizes
@@ -453,9 +291,7 @@ namespace POS_Shoes.Areas.Manager.Controllers
                 {
                     if (i < existingSizes.Count && i < existingQuantities.Count)
                     {
-                        var sizeToUpdate = existingProduct.ProductSizes
-                            .FirstOrDefault(ps => ps.SizeID == existingSizeIds[i]);
-
+                        var sizeToUpdate = existingProduct.ProductSizes.FirstOrDefault(ps => ps.SizeID == existingSizeIds[i]);
                         if (sizeToUpdate != null && !string.IsNullOrEmpty(existingSizes[i]))
                         {
                             sizeToUpdate.Size = existingSizes[i];
@@ -470,18 +306,15 @@ namespace POS_Shoes.Areas.Manager.Controllers
             {
                 for (int i = 0; i < newSizes.Count; i++)
                 {
-                    if (i < newQuantities.Count &&
-                        !string.IsNullOrEmpty(newSizes[i]) &&
-                        newQuantities[i] > 0)
+                    if (i < newQuantities.Count && !string.IsNullOrEmpty(newSizes[i]) && newQuantities[i] > 0)
                     {
-                        var newSize = new ProductSize
+                        _context.ProductSizes.Add(new ProductSize
                         {
                             SizeID = Guid.NewGuid(),
                             ProductID = existingProduct.ProductID,
                             Size = newSizes[i],
                             Quantity = newQuantities[i]
-                        };
-                        _context.ProductSizes.Add(newSize);
+                        });
                     }
                 }
             }
@@ -489,22 +322,16 @@ namespace POS_Shoes.Areas.Manager.Controllers
 
         private void CleanupModelStateForSizes()
         {
-            var newQuantitiesKeys = ModelState.Keys.Where(k => k.StartsWith("newQuantities")).ToList();
-            var newSizesKeys = ModelState.Keys.Where(k => k.StartsWith("newSizes")).ToList();
+            var keys = ModelState.Keys
+                .Where(k => k.StartsWith("newQuantities") || k.StartsWith("newSizes"))
+                .ToList();
 
-            foreach (var key in newQuantitiesKeys.Concat(newSizesKeys))
+            foreach (var key in keys)
             {
                 var values = Request.Form[key].Where(v => !string.IsNullOrWhiteSpace(v)).ToArray();
                 if (!values.Any())
-                {
                     ModelState.Remove(key);
-                }
             }
-        }
-
-        private bool ProductExists(Guid id)
-        {
-            return _context.Products.Any(e => e.ProductID == id);
         }
     }
 }

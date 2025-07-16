@@ -1,5 +1,5 @@
-<!-- Areas/Manager/Views/Product/Index.cshtml -->
-@model IEnumerable<POS_Shoes.Models.Entities.Product>
+@using POS_Shoes.Models.Entities
+@model IEnumerable<Product>
 @{
     ViewData["Title"] = "Quản Lý Sản Phẩm";
     var promotionDetails = ViewBag.PromotionDetails as List<PromotionDetails>;
@@ -54,53 +54,71 @@
                     </tr>
                 </thead>
                 <tbody>
-                    @foreach (var item in Model)
+                    @foreach (var product in Model)
                     {
-                        var productPromotion = promotionDetails?.FirstOrDefault(p => p.ProductID == item.ProductID);
-                        <tr data-status="@item.Status?.ToLower()">
+                        // Lookup PromotionDetails cho từng product
+                        var pd = promotionDetails?.FirstOrDefault(x => x.ProductID == product.ProductID);
+                        var promo = pd?.Promotion;
+                        var discount = promo?.discount ?? 0m;
+
+                        <tr data-status="@product.Status?.ToLower()">
                             <td>
-                                @if (!string.IsNullOrEmpty(item.Image))
+                                @if (!string.IsNullOrEmpty(product.Image))
                                 {
-                                    <img src="@item.Image" alt="@item.ProductName" class="img-thumbnail"
-                                        style="width: 50px; height: 50px; object-fit: cover;">
+                                    <img src="@product.Image" alt="@product.ProductName" class="img-thumbnail"
+                                        style="width:50px; height:50px; object-fit:cover;">
                                 }
                                 else
                                 {
                                     <div class="bg-light d-flex align-items-center justify-content-center"
-                                        style="width: 50px; height: 50px;">
+                                        style="width:50px; height:50px;">
                                         <i class="fas fa-image text-muted"></i>
                                     </div>
                                 }
                             </td>
                             <td>
-                                <strong>@item.ProductName</strong>
-                                @if (item.Quantity < 10)
+                                <strong>@product.ProductName</strong>
+                                @if (product.Quantity < 10)
                                 {
                                     <br>
-
-                                    <small class="text-danger"><i class="fas fa-exclamation-triangle"></i> Sắp hết
-                                        hàng</small>
+                                    <small class="text-danger"><i class="fas fa-exclamation-triangle"></i> Sắp hết hàng</small>
                                 }
                             </td>
-                            <td><code>@item.Barcode</code></td>
-                            <td><strong class="text-success">@item.Price.ToString("C0")</strong></td>
+                            <td><code>@product.Barcode</code></td>
                             <td>
-                                @if (item.Quantity < 10)
+                                @if (promo != null && discount > 0)
                                 {
-                                    <span class="badge bg-warning">@item.Quantity</span>
-                                }
-                                else if (item.Quantity < 5)
-                                {
-                                    <span class="badge bg-danger">@item.Quantity</span>
+                                    var discounted = product.Price * (1 - discount / 100);
+                                    <strong class="text-danger">@discounted.ToString("N0") VND</strong>
+                            
+                                    <br>
+                                    <small class="text-muted"><del>@product.Price.ToString("N0") VND</del></small>
+
+                                    <br>
+                                    <span class="badge bg-success">-@discount% OFF</span>
                                 }
                                 else
                                 {
-                                    <span class="badge bg-success">@item.Quantity</span>
+                                    <strong class="text-success">@product.Price.ToString("N0") VND</strong>
                                 }
                             </td>
-                            <td>@item.Supplier</td>
                             <td>
-                                @if (item.Status == "active")
+                                @if (product.Quantity < 5)
+                                {
+                                    <span class="badge bg-danger">@product.Quantity</span>
+                                }
+                                else if (product.Quantity < 10)
+                                {
+                                    <span class="badge bg-warning">@product.Quantity</span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-success">@product.Quantity</span>
+                                }
+                            </td>
+                            <td>@product.Supplier</td>
+                            <td>
+                                @if ((product.Status?.ToLower() ?? "") == "active")
                                 {
                                     <span class="badge bg-success">Hoạt động</span>
                                 }
@@ -110,9 +128,17 @@
                                 }
                             </td>
                             <td>
-                                @if (productPromotion.Promotion != null)
+                                @if (promo != null && discount > 0)
                                 {
-                                    <span class="badge bg-info">@productPromotion.Promotion.Name</span>
+                                    <span class="badge bg-info">@promo.Name (@discount%)</span>
+                                    <br>
+                                    <small class="text-muted">
+                                        @promo.StartDate.ToString("dd/MM/yyyy") - @promo.EndDate.ToString("dd/MM/yyyy")
+                                    </small>
+                                }
+                                else if (promo != null)
+                                {
+                                    <span class="badge bg-secondary">@promo.Name</span>
                                 }
                                 else
                                 {
@@ -120,16 +146,16 @@
                                 }
                             </td>
                             <td>
-                                @if (item.ProductSizes != null && item.ProductSizes.Any())
+                                @if (product.ProductSizes != null && product.ProductSizes.Any())
                                 {
                                     <div class="d-flex flex-wrap gap-1">
-                                        @foreach (var size in item.ProductSizes.Take(3))
+                                        @foreach (var size in product.ProductSizes.Take(3))
                                         {
                                             <span class="badge bg-outline-primary">@size.Size</span>
                                         }
-                                        @if (item.ProductSizes.Count() > 3)
+                                        @if (product.ProductSizes.Count() > 3)
                                         {
-                                            <span class="badge bg-light text-dark">+@(item.ProductSizes.Count() - 3)</span>
+                                            <span class="badge bg-light text-dark">+@(product.ProductSizes.Count() - 3)</span>
                                         }
                                     </div>
                                 }
@@ -140,15 +166,15 @@
                             </td>
                             <td>
                                 <div class="btn-group" role="group">
-                                    <a asp-action="Details" asp-route-id="@item.ProductID"
+                                    <a asp-action="Details" asp-route-id="@product.ProductID"
                                         class="btn btn-sm btn-outline-info" title="Xem chi tiết">
                                         <i class="fas fa-eye"></i>
                                     </a>
-                                    <a asp-action="Edit" asp-route-id="@item.ProductID"
+                                    <a asp-action="Edit" asp-route-id="@product.ProductID"
                                         class="btn btn-sm btn-outline-primary" title="Chỉnh sửa">
                                         <i class="fas fa-edit"></i>
                                     </a>
-                                    <a asp-action="Delete" asp-route-id="@item.ProductID"
+                                    <a asp-action="Delete" asp-route-id="@product.ProductID"
                                         class="btn btn-sm btn-outline-danger" title="Xóa">
                                         <i class="fas fa-trash"></i>
                                     </a>
@@ -164,23 +190,19 @@
 
 @section Scripts {
     <script>
-        // Search functionality
         document.getElementById('searchInput').addEventListener('keyup', function () {
             const searchTerm = this.value.toLowerCase();
             const rows = document.querySelectorAll('#productTable tbody tr');
-
             rows.forEach(row => {
                 const text = row.textContent.toLowerCase();
                 row.style.display = text.includes(searchTerm) ? '' : 'none';
             });
         });
 
-        // Status filter
         document.querySelectorAll('input[name="statusFilter"]').forEach(radio => {
             radio.addEventListener('change', function () {
                 const status = this.value;
                 const rows = document.querySelectorAll('#productTable tbody tr');
-
                 rows.forEach(row => {
                     if (status === 'all') {
                         row.style.display = '';

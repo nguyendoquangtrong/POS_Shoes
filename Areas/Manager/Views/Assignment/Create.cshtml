@@ -81,4 +81,46 @@
 
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />
+    <script>
+        document.getElementById('Shift').addEventListener('change', function () {
+            const startTime = document.getElementById('StartTime');
+            const endTime = document.getElementById('EndTime');
+            switch (this.value) {
+                case 'Sáng':
+                    startTime.value = '06:00';
+                    endTime.value = '14:00';
+                    break;
+                case 'Chiều':
+                    startTime.value = '14:00';
+                    endTime.value = '22:00';
+                    break;
+                case 'Tối':
+                    startTime.value = '22:00';
+                    endTime.value = '06:00';
+                    break;
+                case 'Toàn thời gian':
+                    startTime.value = '06:00';
+                    endTime.value = '22:00';
+                    break;
+                default:
+                    startTime.value = '';
+                    endTime.value = '';
+            }
+        });
+        document.getElementById('AssignmentForm').addEventListener('submit', function (e) {
+            const shift = document.getElementById('Shift').value;
+            const start = document.getElementById('StartTime').value;
+            const end = document.getElementById('EndTime').value;
+            if (start === end) {
+                alert('Giờ bắt đầu và kết thúc không được giống nhau!');
+                e.preventDefault();
+                return false;
+            }
+            if (start > end && shift) {
+                alert('Giờ bắt đầu phải nhỏ hơn giờ kết thúc');
+                e.preventDefault();
+                return false;
+            }
+        })
+    </script>
 }

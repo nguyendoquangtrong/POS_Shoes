@@ -18,11 +18,11 @@
     <div class="col-md-8">
         <form asp-action="Edit" method="post">
             <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
-            
+
             <!-- Hidden fields cho HTTP PUT -->
             <input type="hidden" name="_method" value="PUT" />
             <input type="hidden" asp-for="AssignmentID" />
-            
+
             <div class="card">
                 <div class="card-header">
                     <h5 class="mb-0"><i class="fas fa-info-circle"></i> Thông Tin Lịch Làm Việc</h5>
@@ -37,16 +37,16 @@
                         </select>
                         <span asp-validation-for="UserID" class="text-danger"></span>
                     </div>
-                    
+
                     <div class="mb-3">
                         <label asp-for="Description" class="form-label">
                             <i class="fas fa-file-alt"></i> Mô Tả Công Việc
                         </label>
-                        <textarea asp-for="Description" class="form-control" rows="4" 
-                                  placeholder="Nhập mô tả chi tiết về công việc..."></textarea>
+                        <textarea asp-for="Description" class="form-control" rows="4"
+                            placeholder="Nhập mô tả chi tiết về công việc..."></textarea>
                         <span asp-validation-for="Description" class="text-danger"></span>
                     </div>
-                    
+
                     <div class="row">
                         <div class="col-md-6">
                             <div class="mb-3">
@@ -73,7 +73,7 @@
                             </div>
                         </div>
                     </div>
-                    
+
                     <div class="row">
                         <div class="col-md-6">
                             <div class="mb-3">
@@ -95,7 +95,7 @@
                         </div>
                     </div>
                 </div>
-                
+
                 <div class="card-footer d-flex justify-content-between">
                     <div>
                         <a asp-action="Index" class="btn btn-secondary">
@@ -114,7 +114,7 @@
             </div>
         </form>
     </div>
-    
+
     <div class="col-md-4">
         <div class="card">
             <div class="card-header">
@@ -135,12 +135,10 @@
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />
     <script>
-        // Auto-fill time based on shift selection
-        document.getElementById('Shift').addEventListener('change', function() {
+        document.getElementById('Shift').addEventListener('change', function () {
             const startTime = document.getElementById('StartTime');
             const endTime = document.getElementById('EndTime');
-            
-            switch(this.value) {
+            switch (this.value) {
                 case 'Sáng':
                     startTime.value = '06:00';
                     endTime.value = '14:00';
@@ -153,6 +151,13 @@
                     startTime.value = '22:00';
                     endTime.value = '06:00';
                     break;
+                case 'Toàn thời gian':
+                    startTime.value = '06:00';
+                    endTime.value = '22:00';
+                    break;
+                default:
+                    startTime.value = '';
+                    endTime.value = '';
             }
         });
     </script>

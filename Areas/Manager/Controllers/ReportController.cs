@@ -24,8 +24,8 @@ namespace POS_Shoes.Areas.Manager.Controllers
             var query = _context.Reports
                 .Include(r => r.User)
                 .Where(r => r.Type == "DAILY_REVENUE" &&
-                           r.CreatedAt.Date == date.Value.Date &&
-                           r.User.Role == "Saler");
+                            r.CreatedAt.Date == date.Value.Date &&
+                            r.User.Role == "Saler");
 
             if (!string.IsNullOrEmpty(status))
             {

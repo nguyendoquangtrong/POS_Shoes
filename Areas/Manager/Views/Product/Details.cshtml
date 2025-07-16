@@ -1,9 +1,8 @@
-<!-- Areas/Manager/Views/Product/Details.cshtml -->
 @model POS_Shoes.Models.Entities.Product
 @{
     ViewData["Title"] = "Chi Tiết Sản Phẩm";
-    var promotionDetails = ViewBag.PromotionDetails as List<PromotionDetails>;
-
+    // Lấy promotionDetails đúng cách
+    var promotion = ViewBag.PromotionDetail?.Promotion;
 }
 
 <div class="d-flex justify-content-between align-items-center mb-3">
@@ -22,7 +21,7 @@
             <div class="card-header d-flex justify-content-between align-items-center">
                 <h5 class="mb-0"><i class="fas fa-box"></i> @Model.ProductName</h5>
                 <div>
-                    @if (Model.Status == "active")
+                    @if (Model.Status?.ToLower() == "active")
                     {
                         <span class="badge bg-success fs-6">Hoạt động</span>
                     }
@@ -34,91 +33,72 @@
             </div>
             <div class="card-body">
                 <div class="row">
-                    <div class="col-md-6">
-                        <div class="mb-3">
-                            <label class="form-label text-muted">
-                                <i class="fas fa-tag"></i> Tên Sản Phẩm
-                            </label>
-                            <div class="fw-bold">@Model.ProductName</div>
-                        </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label text-muted"><i class="fas fa-tag"></i> Tên Sản Phẩm</label>
+                        <div class="fw-bold">@Model.ProductName</div>
                     </div>
-                    <div class="col-md-6">
-                        <div class="mb-3">
-                            <label class="form-label text-muted">
-                                <i class="fas fa-barcode"></i> Mã Vạch
-                            </label>
-                            <div><code>@Model.Barcode</code></div>
-                        </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label text-muted"><i class="fas fa-barcode"></i> Mã Vạch</label>
+                        <div><code>@Model.Barcode</code></div>
                     </div>
                 </div>
-
                 <div class="row">
-                    <div class="col-md-4">
-                        <div class="mb-3">
-                            <label class="form-label text-muted">
-                                <i class="fas fa-dollar-sign"></i> Giá Bán
-                            </label>
-                            <div class="fw-bold text-success fs-4">@Model.Price.ToString("C0")</div>
-                        </div>
-                    </div>
-                    <div class="col-md-4">
-                        <div class="mb-3">
-                            <label class="form-label text-muted">
-                                <i class="fas fa-boxes"></i> Số Lượng Tồn Kho
-                            </label>
+                    <div class="col-md-4 mb-3">
+                        <label class="form-label text-muted"><i class="fas fa-dollar-sign"></i> Giá Bán</label>
+                        @if (promotion != null && promotion.discount > 0)
+                        {
+                            var discountedPrice = Model.Price * (1 - promotion.discount / 100);
                             <div>
-                                @if (Model.Quantity > 10)
-                                {
-                                    <span class="badge bg-success fs-6">@Model.Quantity</span>
-                                }
-                                else if (Model.Quantity > 0)
-                                {
-                                    <span class="badge bg-warning fs-6">@Model.Quantity</span>
-                                }
-                                else
-                                {
-                                    <span class="badge bg-danger fs-6">Hết hàng</span>
-                                }
+                                <span class="fw-bold text-danger fs-4">@discountedPrice.ToString("N0") VND</span><br />
+                                <small class="text-muted"><del>@Model.Price.ToString("N0") VND</del></small><br />
+                                <span class="badge bg-success">-@promotion.discount% OFF</span>
                             </div>
+                        }
+                        else
+                        {
+                            <div class="fw-bold text-success fs-4">@Model.Price.ToString("N0") VND</div>
+                        }
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <label class="form-label text-muted"><i class="fas fa-boxes"></i> Số Lượng Tồn Kho</label>
+                        <div>
+                            @if (Model.Quantity > 10)
+                            {
+                                <span class="badge bg-success fs-6">@Model.Quantity</span>
+                            }
+                            else if (Model.Quantity > 0)
+                            {
+                                <span class="badge bg-warning fs-6">@Model.Quantity</span>
+                            }
+                            else
+                            {
+                                <span class="badge bg-danger fs-6">Hết hàng</span>
+                            }
                         </div>
                     </div>
-                    <div class="col-md-4">
-                        <div class="mb-3">
-                            <label class="form-label text-muted">
-                                <i class="fas fa-truck"></i> Nhà Cung Cấp
-                            </label>
-                            <div class="fw-bold">@Model.Supplier</div>
-                        </div>
+                    <div class="col-md-4 mb-3">
+                        <label class="form-label text-muted"><i class="fas fa-truck"></i> Nhà Cung Cấp</label>
+                        <div class="fw-bold">@Model.Supplier</div>
                     </div>
                 </div>
-
                 <div class="row">
-                    <div class="col-md-12">
-                        <div class="mb-3">
-                            <label class="form-label text-muted">
-                                <i class="fas fa-percent"></i> Khuyến Mãi
-                            </label>
-                            <div>
-                                @{
-                                    var productPromotion = promotionDetails?.FirstOrDefault(pd => pd.ProductID ==
-                                    Model.ProductID);
-                                }
-                                @if (productPromotion != null)
-                                {
-                                    <span class="badge bg-info fs-6">@productPromotion.Promotion.Name</span>
-                                }
-                                else
-                                {
-                                    <span class="text-muted">Không áp dụng khuyến mãi</span>
-                                }
-                            </div>
-                        </div>
+                    <div class="col-md-12 mb-3">
+                        <label class="form-label text-muted"><i class="fas fa-percent"></i> Khuyến Mãi</label>
+                        @if (promotion != null) {
+    <span class="badge bg-info fs-6">@promotion.Name (@promotion.discount% OFF)</span>
+    <span class="badge bg-success">
+        @promotion.StartDate.ToString("dd/MM/yyyy") - @promotion.EndDate.ToString("dd/MM/yyyy")
+    </span>
+}
+else {
+    <span class="text-muted">Không áp dụng khuyến mãi</span>
+}
+                                                                                                                                                                                                                                                                                                                        
                     </div>
                 </div>
-
                 @if (Model.Quantity < 10)
                 {
-                    <div class="alert alert-warning">
+                    <div class="alert alert-warning mt-3">
                         <i class="fas fa-exclamation-triangle"></i>
                         <strong>Cảnh báo:</strong> Sản phẩm sắp hết hàng. Vui lòng nhập thêm hàng!
                     </div>
@@ -225,7 +205,6 @@
                 }
             </div>
         </div>
-
         <div class="card">
             <div class="card-header">
                 <h6 class="mb-0"><i class="fas fa-chart-bar"></i> Thống Kê</h6>

@@ -78,19 +78,6 @@
                                 <span asp-validation-for="Supplier" class="text-danger"></span>
                             </div>
                         </div>
-                        <div class="col-md-6">
-                            <div class="mb-3">
-                                <label class="form-label">
-                                    <i class="fas fa-percent"></i> Khuyến mãi
-                                </label>
-
-                                <!-- chỉ đổi đúng dòng select -->
-                                <select name="promotionId" class="form-select" asp-items="ViewBag.PromotionID">
-                                    <option value="">-- Không áp dụng --</option>
-                                </select>
-                                <!-- KHÔNG dùng asp-validation-for vì không gắn vào Product -->
-                            </div>
-                        </div>
 
                     </div>
                 </div>
@@ -137,7 +124,8 @@
                             <p class="text-muted">Chưa có hình ảnh</p>
                         </div>
                     </div>
-                    <input type="file" name="imageFile" class="form-control" accept="image/*" id="imageInput" />
+                    <input type="file" name="imageFile" class="form-control" accept="image/*" id="imageInput"
+                        required />
                     <small class="text-muted">Chấp nhận: JPG, PNG, GIF (Max: 5MB)</small>
                 </div>
             </div>
@@ -172,11 +160,11 @@
                 reader.readAsDataURL(file);
             } else {
                 preview.innerHTML = `
-                                <div class="border rounded p-4 bg-light">
-                                    <i class="fas fa-image fa-3x text-muted mb-2"></i>
-                                    <p class="text-muted">Chưa có hình ảnh</p>
-                                </div>
-                            `;
+                                        <div class="border rounded p-4 bg-light">
+                                            <i class="fas fa-image fa-3x text-muted mb-2"></i>
+                                            <p class="text-muted">Chưa có hình ảnh</p>
+                                        </div>
+                                    `;
             }
         });
 
@@ -186,18 +174,18 @@
             const newRow = document.createElement('div');
             newRow.className = 'row size-row mt-2';
             newRow.innerHTML = `
-                            <div class="col-md-6">
-                                <input type="text" name="sizes" class="form-control" placeholder="Kích cỡ" />
-                            </div>
-                            <div class="col-md-5">
-                                <input type="number" name="quantities" class="form-control" placeholder="Số lượng" min="0" />
-                            </div>
-                            <div class="col-md-1">
-                                <button type="button" class="btn btn-outline-danger remove-size">
-                                    <i class="fas fa-trash"></i>
-                                </button>
-                            </div>
-                        `;
+                                    <div class="col-md-6">
+                                        <input type="text" name="sizes" class="form-control" placeholder="Kích cỡ" />
+                                    </div>
+                                    <div class="col-md-5">
+                                        <input type="number" name="quantities" class="form-control" placeholder="Số lượng" min="0" />
+                                    </div>
+                                    <div class="col-md-1">
+                                        <button type="button" class="btn btn-outline-danger remove-size">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </div>
+                                `;
             container.appendChild(newRow);
             updateRemoveButtons();
         });

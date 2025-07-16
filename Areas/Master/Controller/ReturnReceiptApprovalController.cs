@@ -64,7 +64,7 @@ namespace POS_Shoes.Areas.Master.Controllers
         // POST: Master/ReturnReceiptApproval/Approve
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Approve(Guid id, string approvalNote = "")
+        public async Task<IActionResult> Approve(Guid id)
         {
             var returnReceipt = await _context.ReturnReceipts
                 .Include(r => r.ReturnReceiptDetails)
@@ -84,10 +84,10 @@ namespace POS_Shoes.Areas.Master.Controllers
             returnReceipt.Status = "Approved";
             returnReceipt.TotalRefundAmount = (double)actualRefundAmount;
 
-            if (!string.IsNullOrEmpty(approvalNote))
-            {
-                returnReceipt.Reason += $" | Master duyệt: {approvalNote}";
-            }
+            // if (!string.IsNullOrEmpty(approvalNote))
+            // {
+            // returnReceipt.Reason += $" | Master duyệt: {approvalNote}";
+            // }
 
             await _context.SaveChangesAsync();
 
